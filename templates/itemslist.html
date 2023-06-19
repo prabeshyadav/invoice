@@ -1,0 +1,342 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bootstrap demo</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/js/bootstrap.bundle.min.js"></script>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel='stylesheet' type='text/css' media='screen' href='{% static 'style/table.css' %}'>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-2 p-0 main-row-top">
+        <div class="bar">
+          <nav class=" navbar-expand-lg bg-body-tertiary ">
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+              <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-flex flex-column">
+                <li class="nav-item  mb-2 d-flex align-items-center" style="font-size:25px; margin-left:10px">
+                  <span class="material-symbols-outlined">
+                    lab_profile
+                  </span><span class="text-white text-lg pl-1 pb-2 pt-1">Invoice</span>
+                </li>
+                <li class="nav-item mb-2 ml-2">
+                  <a class="nav-link  bg-primary text-white d-flex align-items-center" aria-current="page"
+                    href="index.html"><span class="material-symbols-outlined pr-3 ">
+                      person
+                    </span> Customers</a>
+                </li>
+                <li class="nav-item mb-2 ml-2">
+                  <a class="nav-link text-white d-flex align-items-center" href='{% url 'items' %}'><span
+                      class="material-symbols-outlined pr-3">
+                      work
+                    </span>Items</a>
+                </li>
+                <li class="nav-item mb-2 ml-2">
+                  <a class="nav-link text-white d-flex align-items-center" href='{% url 'invoice' %}'><span
+                      class="material-symbols-outlined pr-3">
+                      task
+                    </span>Invoices</a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      <!-- top-nav -->
+      <div class="col-md-10 p-0 main-row-side">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary " style="position: fixed;
+              width: inherit;
+              z-index: 4;">
+          <!-- <div class="collapse navbar-collapse" id="navbarSupportedContent"> -->
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 flex flex-row">
+            <li class="nav-item-sec mb-1 pt-4">
+              <span class="material-symbols-outlined" style="color: black;">
+                update
+              </span>
+            </li>
+            <li class="nav-item mb-2 pt-3 ">
+              <div class="input-group mb-3 ml-3 mt-2">
+                <span class="input-group-text" id="addon-wrapping"><span class="material-symbols-outlined" id="search">
+                    search
+                  </span>
+                </span>
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#">Customers</a></li>
+                  <li><a class="dropdown-item" href="#">Invoices</a></li>
+                  <li><a class="dropdown-item" href="#">Quotes</a></li>
+                  <li><a class="dropdown-item" href="#">Credit Notes</a></li>
+                  <li><a class="dropdown-item" href="#">Expenses</a></li>
+                  <li><a class="dropdown-item" href="#">Project</a></li>
+                  <li><a class="dropdown-item" href="#">Timesheet</a></li>
+                  <li><a class="dropdown-item" href="#">Items</a></li>
+                  <li><a class="dropdown-item" href="#">Tasks</a></li>
+                </ul>
+                <input type="text" class="form-control" aria-label="Text input with segmented dropdown button"
+                  placeholder="Search In Customers (/)">
+              </div>
+            </li>
+          </ul>
+
+          <div class="col-md-2"></div>
+
+          <div class="col-md-3 hstack gap-1 d-flex" style="justify-content: end;">
+            <span class="material-symbols-outlined text-primary">
+              add_box
+            </span>
+            <span class="text-dark vr"></span>
+            <span class="material-symbols-outlined text-dark ">
+              notifications
+            </span>
+            <span class="material-symbols-outlined text-dark pl-2">
+              settings
+            </span>
+            <span class="text-dark vr"></span>
+            <!-- name and image -->
+            <div class="d-flex align-items-center">
+              <div class="dropdown orglist-topband orglist-title top-item-fixed-width">
+                <div class="cursor-pointer d-flex align-items-center">
+                  <span class="org-name-section font-normal over-flow" title="Sanya "> Sanya </span>
+                </div>
+              </div>
+            </div>
+            <div class="top-item-fixed-width"><span class="cursor-pointer " data-ember-action=""
+                data-ember-action-54="54">
+                <img class="float-left rounded-circle" id="img1" alt="Sanya Parajuli"
+                  src="https://contacts.zoho.com/file?t=user&amp;ID=812837878&amp;fs=thumb"></span>
+            </div>
+          </div>
+          <!-- icon
+                          <!-- <div class="products-menu-addon-container"><div class="text-center cursor-pointer zoho-apps-launcher"><div class="zoho-apps-hamburger" aria-hidden="true"><div class="hamburger-dots"><span class="icon-start"></span> <span class="icon-center"></span> <span class="icon-last"></span> <span class="icon-start"></span> <span class="icon-center"></span> <span class="icon-last"></span> <span class="icon-start"></span> <span class="icon-center"></span> <span class="icon-last"></span></div> <div class="hamburger-z-icon"><svg viewBox="0 0 100 100" class="icon-18"><path d="M50 50l1.8-4.5 3.5-8.6c1.3-3.3-1.1-6.9-4.6-6.9H9c-3.6 0-6-3.7-4.6-6.9l6.8-16C12 5.2 13.8 4 15.8 4h51.9c14.1 0 23.7 14.2 18.6 27.2l-8.7 22.3M22.4 46.4l-8.7 22.3C8.6 81.8 18.2 96 32.3 96h51.9c2 0 3.8-1.2 4.6-3.1l6.8-16c1.4-3.3-1-6.9-4.6-6.9H49.4c-3.5 0-6-3.6-4.6-6.9l3.7-9.3L50 50"></path></svg></div></div></div> -->
+        </nav>
+        <!-- form content -->
+        <div class="column list-column expanded-list-column">
+          <div class="fill mt-5 ">
+            <div class="list-filter">
+              <button type="button" class="item-btn btn  dropdown-toggle dropdown-toggle-split border-0"
+                style="outline: none;" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>All Items
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#">Customers</a></li>
+                <li><a class="dropdown-item" href="#">Invoices</a></li>
+                <li><a class="dropdown-item" href="#">Quotes</a></li>
+                <li><a class="dropdown-item" href="#">Credit Notes</a></li>
+              </ul>
+              <div class="btn-toolbar float-right mr-7">
+                <div class="mr-1">
+                  <a href={% url 'index' %}><button class="btn btn-primary"> New</button></a>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Customers</a></li>
+                    <li><a class="dropdown-item" href="#">Invoices</a></li>
+                    <li><a class="dropdown-item" href="#">Quotes</a></li>
+                    <li><a class="dropdown-item" href="#">Credit Notes</a></li>
+                  </ul>
+                </div>
+                <div class="dropdown btn-group list-sorter">
+                  <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#" role="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Name</a></li>
+                    <li><a class="dropdown-item" href="#">Rate</a></li>
+                    <li><a class="dropdown-item" href="#">Last Modified</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Import Items</a></li>
+                    <li><a class="dropdown-item" href="#">Export Items</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Export Current View</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Preferences</a></li>
+                    <li><a class="dropdown-item" href="#">Refreshlist</a></li>
+                  </ul>
+                </div>
+                <div>
+
+
+
+                </div>
+              </div>
+            </div>
+            <div class="fill">
+              <div class="table-responsive overflow-initial">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col d-flex ">
+                        <!-- Button trigger modal -->
+                      <div class="checkboxes">
+                        <span> <button type="button" class="btn" data-bs-toggle="modal"
+                          data-bs-target="#staticBackdrop">
+                          <span class="icon-sm"><i class="fa-regular fa-calendar-plus text-primary"></i>
+                          </span>
+                        </button>
+                        <!-- Modal -->
+                        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false"
+                          tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h4 class="modal-title " id="staticBackdropLabel">Customize Columns
+                                </h4>
+                                <div class="font-small flex-grow-1 text-right pr-3">0 of 14 Selected</div>
+                                <span class="separationline pl-3 h-17"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                  aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body column-body p-0">
+                                <div>
+                                  <div class="column-search px-5 pt-5 pb-2">
+                                    <input placeholder="Search" type="search" autocapitalize="off" autocomplete="off"
+                                      spellcheck="false" autocorrect="false" autofocus="true" style="width: 100%;">
+                                  </div>
+                                  <ul class="pb-5 px-5 mb-0 border-0 list-unstyled column-list">
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Company Name
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Email
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Name
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Work Phone
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Recievables
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Unused Credits
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">First Name
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Last Name
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Mobile Phone
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Payment Terns
+                                      </div>
+                                    </li>
+                                    <li draggable="true" class="my-2 mx-0 cursor-move">
+                                      <div class="font-xs d-flex align-items-center">
+                                        <input type="checkbox" class="mr-2">Status
+                                      </div>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-primary">Save</button>
+                                <button type="button" class="btn btn-secondary"
+                                  data-bs-dismiss="modal">Cancel</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </span>
+                      <span  style="padding-top: 5px; "> <input type="checkbox" class="checkbox"></span>
+                      </div>
+                       
+
+
+                      </th>
+                      {% if messages %}
+                      <ul class="messages">
+                          {% for message in messages %}
+                          <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                          {% endfor %}
+                      </ul>
+                      {% endif %}
+
+                      <th scope="col">Name</th>
+                      <th scope="col">COMPANY NAME</th>
+                      <th scope="col">EMAIL</th>
+                      <th scope="col">WORK PHONE</th>
+                      <th scope="col">Website</th>
+                      <th scope="col">mobile</th>
+                      
+
+{% for user in user %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                  
+                      <td>{{user.id}}</td>
+                      <td>{{user.first_name}}</td>
+                      <td>{{user.company_name}}</td>
+                      <td>{{user.email}}</td>
+                      <td>{{user.phone}}</td>
+                      <td>{{user.website}}</td>
+                      <td>{{user.mobile}}</td>
+                      
+                    </tr>
+                    {% endfor %}
+
+                  </tbody>
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+  </div>
+  <script src='main.js'></script>
+</body>
+
+</html>
