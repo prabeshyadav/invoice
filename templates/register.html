@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+​
+<head>
+    <title>Login Form</title>
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/fontawesome.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel='stylesheet' type='text/css' media='screen' href='{% static 'style/login.css' %}'>
+</head>
+​
+<body>
+    <div class="main-container">
+        <div class="container">
+            <div class="form-container">
+                <img src="{% static 'images/img5.png' %}" alt="form-logo" class="form-logo">
+                <p class="form-header">Register to Invoice</p>
+
+
+                <form class="login-form invoice-form d-flex justify-content-center flex-column">
+                    <div class=" login-input input-group flex-nowrap mb-4">
+                        <span class=" input-height input-group-text bg-white" id="addon-wrapping"><i
+                                class="fa-solid fa-user"></i></span>
+                        <input type="text" class=" input-height form-control" placeholder="Username"
+                            aria-label="Username" aria-describedby="addon-wrapping" fdprocessedid="njf8m9" name='username'>
+                    </div>
+                    <div class=" login-input input-group flex-nowrap mb-4">
+                        <span class=" input-height input-group-text bg-white" id="addon-wrapping"><i class="fa-regular fa-envelope"></i></span>
+                        <input type="email" class=" input-height form-control" placeholder="Email"
+                            aria-label="email" aria-describedby="addon-wrapping" fdprocessedid="njf8m9" name='email'>
+                    </div>
+​
+                    <div class=" login-input input-group flex-nowrap mb-4">
+                        <span class=" input-height input-group-text bg-white" id="addon-wrapping"> <i
+                                class="fa-solid fa-lock"></i></span>
+                        <input type="password" class=" input-height form-control" placeholder="Password"
+                            aria-label="password" aria-describedby="addon-wrapping" fdprocessedid="njf8m9" name='password'>
+                    </div>
+                    <button class="btn-login">Register
+                    </button>
+                    
+                  
+                </form>
+            </div>
+        </div>
+    </div>
+​
+    <!-- Add Bootstrap JS (optional) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+</body>
+​
+</html>
