@@ -63,7 +63,7 @@ def Customer(request):
         if fm.is_valid():
             fm.save()
             messages.success(request, "Successfully Added Customer." )
-            return redirect("index")
+            return redirect("table")
         else:
             print("form is invalid")
             messages.error(request, fm.errors )
@@ -115,7 +115,9 @@ def InvoiceView(request):
         fm=InvoiceForm()
     from .models import AddCustomer
     users = AddCustomer.objects.all()
-    context={'forms':fm,'users':users}
+   
+    invoice_id = int(Invoice.objects.all().last().invoice_number)+1
+    context={'forms':fm,'users':users,'invoice_id':invoice_id}
     
     return render(request,'invoices.html',context)
 
@@ -124,27 +126,12 @@ def InvoiceView(request):
 #     return render(request,'index.html')
 
 
-def update_data(request,id):
-    dl=AddCustomer.objects.get(pk=id)
-
-    if request.method=='POST':   
-        if fm.is_valid():
-            cleaned_data = fm.cleaned_data
-            AddCustomer.objects.create(**cleaned_data)
-            return HttpResponse("saved")
-    else:
-        fm=AddCUstomerForm(initial={
-            'first_name': dl.first_name,
-            'last_name': dl.last_name,
-            'company_name': dl.company_name,
-            'customer_display_name': dl.customer_display_name,
-            'individual_name': dl.individual_name,
-            'email': dl.email,
-            'phone': dl.phone,
-            'mobile': dl.mobile,
-            })
-    context={'forms':fm, 'dl':dl}   
-    return render(request,'edit.html',context)
+def tableView(request):
+    user=AddCustomer.objects.all()
+    
+    context={'user':user}
+    return render(request,'itemslist.html',context)
+    
     
     
 def Delete_table(request,id):
