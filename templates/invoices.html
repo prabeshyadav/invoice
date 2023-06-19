@@ -32,18 +32,18 @@
                 </li>
                 <li class="nav-item mb-2 ml-2">
                   <a class="nav-link bg-primary text-white d-flex align-items-center" aria-current="page"
-                    href="index.html"><span class="material-symbols-outlined pr-3 ">
+                    href="{% url 'index' %}"><span class="material-symbols-outlined pr-3 ">
                       person
                     </span> Customers</a>
                 </li>
                 <li class="nav-item mb-2 ml-2">
-                  <a class="nav-link text-white d-flex align-items-center" href="items.html"><span
+                  <a class="nav-link text-white d-flex align-items-center" href="{% url 'items' %}"><span
                       class="material-symbols-outlined pr-3">
                       work
                     </span>Items</a>
                 </li>
                 <li class="nav-item mb-2 ml-2">
-                  <a class="nav-link text-white d-flex align-items-center" href="invoices.html"><span
+                  <a class="nav-link text-white d-flex align-items-center" href="{% url 'invoice' %}"><span
                       class="material-symbols-outlined pr-3">
                       task
                     </span>Invoices</a>
@@ -149,7 +149,7 @@
                       <select class="form-control col-lg-9 bg-white" id="customer*"  name="customer_name" style="padding: 0px;" >
                         <option selected disabled> Select Customer</option>
                         {% for user in users %}
-                          <option value="{{user.first_name}}" > {{user.first_name}}</option>
+                          <option value="{{user.id}}" > {{user.id}}</option>
                         {% endfor %}
                       </select>
                     </div>
@@ -163,7 +163,7 @@
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3 text-danger">Invoice#*</span>
                     <div class="col-lg-4">
-                      <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number'>
+                      <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number' value="{{invoice_id}}">
                     </div>
                   </div>
                 </div>
@@ -179,7 +179,7 @@
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3 text-danger">Invoice Date</span>
                     <div class="col-lg-2">
-                      <input type="text" class="form-control" id="orderno" name='invoice_date'>
+                      <input type="Date" class="form-control" id="orderno" name='invoice_date'>
                     </div>
                     <span class="col-form-label col-lg-1 text-danger">Terms</span>
                     <div class="col-lg-2">
@@ -187,7 +187,7 @@
                     </div>
                     <span class="col-form-label col-lg-2 text-danger">Due Date</span>
                     <div class="col-lg-2">
-                      <input type="text" class="form-control" id="orderno" name='due_date'>
+                      <input type="Date" class="form-control" id="orderno" name='due_date'>
                     </div>
                   </div>
                 </div>

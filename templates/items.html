@@ -32,18 +32,18 @@
                 </li>
                 <li class="nav-item mb-2 ml-2">
                   <a class="nav-link  bg-primary text-white d-flex align-items-center" aria-current="page"
-                    href="index.html"><span class="material-symbols-outlined pr-3 ">
+                    href="{% url 'index' %}"><span class="material-symbols-outlined pr-3 ">
                       person
                     </span> Customers</a>
                 </li>
                 <li class="nav-item mb-2 ml-2">
-                  <a class="nav-link text-white d-flex align-items-center" href="items.html"><span
+                  <a class="nav-link text-white d-flex align-items-center" href="{% url 'items' %}"><span
                       class="material-symbols-outlined pr-3">
                       work
                     </span>Items</a>
                 </li>
                 <li class="nav-item mb-2 ml-2">
-                  <a class="nav-link text-white d-flex align-items-center" href="invoices.html"><span
+                  <a class="nav-link text-white d-flex align-items-center" href="{% url 'invoice' %}"><span
                       class="material-symbols-outlined pr-3">
                       task
                     </span>Invoices</a>
