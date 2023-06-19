@@ -10,7 +10,8 @@ urlpatterns = [
     path('register',views.register,name='register'),
     path('reset',views.ResetPassword,name='reset'),
     path('delete/<int:id>/', views.Delete_table,name="delete_data"),
-    path('edit/<int:id>/', views.update_data,name="update"),
-    path('items/',views.ItemView,name='items')
+    #path('edit/<int:id>/', views.update_data,name="update"),
+    path('items/',views.ItemView,name='items'),
+    path('table',views.tableView,name='table')
     #path('',views.AddCustomer.as_view(),name='index')
 ]
