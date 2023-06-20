@@ -27,8 +27,11 @@ class AddCustomer(models.Model):
     twitter=models.CharField( max_length=50, blank=True)
 
     
+    def fullname(self):
+        return f"{self.first_name} {self.last_name}"
     
-
+    def __str__(self):
+        return self.fullname()
     
 class Invoice(models.Model):
     customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE)
@@ -38,6 +41,7 @@ class Invoice(models.Model):
     invoice_date=models.DateField()
     due_date=models.DateField()
     subject=models.CharField(max_length=255)
+    
     
 class Items(models.Model):
     type=models.CharField( max_length=50,choices=commons.ITEM_CHOICES,blank=True)

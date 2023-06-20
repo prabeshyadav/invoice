@@ -34,7 +34,7 @@ def loginPage(request):
 		if user is not None:
 			form = login(request, user)
 			messages.success(request, f' wecome {username} !!')
-			return redirect('index')
+			return redirect('table')
 		else:
 			messages.info(request, f'account done not exit plz sign in')
 	form = CreateUserForm()
@@ -53,10 +53,12 @@ def logoutUser(request):
 
 @login_required
 def Customer(request):
+    # return HttpResponse(request)
     data = {
         's': commons.SALUTATION_CHOICES,
         'c':commons.CURRENCY_CHOICES,
     }
+    # return HttpResponse(data)
     if request.method=='POST':
         print(request.POST)
         fm=CustomerModelForm(request.POST) 
@@ -104,7 +106,7 @@ def InvoiceView(request):
         if fm.is_valid():
             fm.save()
             messages.success(request, "Successfully Added Customer." )
-            return redirect('invoice')
+            return redirect('invoicelist')
         
         else:
             print("form is invalid")
@@ -115,7 +117,7 @@ def InvoiceView(request):
         fm=InvoiceForm()
     from .models import AddCustomer
     users = AddCustomer.objects.all()
-   
+
     invoice_id = int(Invoice.objects.all().last().invoice_number)+1
     context={'forms':fm,'users':users,'invoice_id':invoice_id}
     
@@ -131,6 +133,12 @@ def tableView(request):
     
     context={'user':user}
     return render(request,'itemslist.html',context)
+
+
+def InvoiceListView(request):
+    user=Invoice.objects.all()
+    context={'user':user}
+    return render(request,'invoicelist.html',context)
     
     
     
@@ -145,3 +153,14 @@ def Delete_table(request,id):
 def ItemView(request):
     context={}
     return render(request,'items.html',context)
+
+def getItem():
+    data = [
+        {'item_name':"product1","price":23},
+        {'item_name':"product1","price":23},
+        {'item_name':"product1","price":23},
+        {'item_name':"product1","price":23},
+    ]
+    
+def home(reequest):
+    return render(reequest,'base.html',)
