@@ -12,6 +12,8 @@ urlpatterns = [
     path('delete/<int:id>/', views.Delete_table,name="delete_data"),
     #path('edit/<int:id>/', views.update_data,name="update"),
     path('items/',views.ItemView,name='items'),
-    path('table',views.tableView,name='table')
+    path('table',views.tableView,name='table'),
+    path('invoicelist',views.InvoiceListView,name='invoicelist'),
     #path('',views.AddCustomer.as_view(),name='index')
+    path('home/',views.home,name='home')
 ]
