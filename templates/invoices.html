@@ -25,9 +25,19 @@
                     <span class="col-form-label col-lg-3 text-danger"> Customer*</span>
                     <div class="col-lg-9 d-flex">
                       <select class="form-control col-lg-9 bg-white" id="customer*"  name="customer_name" style="padding: 0px;" >
-                        <option selected disabled> Select Customer</option>
+                        <option selected disabled value="{{obj.customer_name}}"> Select Customer</option>
                         {% for user in users %}
                           <option value="{{user.id}}" > {{user.first_name}}</option>
+                        {% endfor %}
+    
+                        {% if obj.customer_name %}
+                          <option value="{{obj.customer_name.id }}" selected>{{ obj.customer_name }}</option>
+                        
+                        {% endif %}
+                        {% for u in data.user %}
+                            {% if u != obj.customer_name %}
+                                <option value="{{u.id}}">{{u}}</option>
+                            {% endif %}
                         {% endfor %}
                       </select>
                     </div>
@@ -41,7 +51,7 @@
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3 text-danger">Invoice#*</span>
                     <div class="col-lg-4">
-                      <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number' value="{{invoice_id}}">
+                      <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number' value="{{obj.invoice_number}}">
                     </div>
                   </div>
                 </div>
@@ -49,7 +59,7 @@
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3">Order Number</span>
                     <div class="col-lg-4">
-                      <input type="text" class="form-control" id="orderno" name='order_number'>
+                      <input type="text" class="form-control" id="orderno" name='order_number' value="{{obj.order_number}}" >
                     </div>
                   </div>
                 </div>
@@ -57,7 +67,7 @@
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3 text-danger">Invoice Date</span>
                     <div class="col-lg-2">
-                      <input type="Date" class="form-control" id="orderno" name='invoice_date'>
+                      <input type="Date" class="form-control" id="orderno" name='invoice_date' value="{{obj.invoice_date|date:'Y-m-d'}}">
                     </div>
                     <span class="col-form-label col-lg-1 text-danger">Terms</span>
                     <div class="col-lg-2">
@@ -65,7 +75,7 @@
                     </div>
                     <span class="col-form-label col-lg-2 text-danger">Due Date</span>
                     <div class="col-lg-2">
-                      <input type="Date" class="form-control" id="orderno" name='due_date'>
+                      <input type="date" class="form-control" id="orderno" name='due_date' value="{{obj.due_date|date:'Y-m-d'}}">
                     </div>
                   </div>
                 </div>
@@ -91,7 +101,7 @@
                     <span class="col-form-label col-lg-3">Subject</span>
                     <div class="col-lg-7">
                       <textarea placeholder="Let your customer know what this invoice is for"
-                        class="form-control text-area " style="height: 35px;" name='subject'></textarea>
+                        class="form-control text-area " style="height: 35px;" name='subject'>{{obj.subject}}</textarea>
                     </div>
                   </div>
                 </div>
