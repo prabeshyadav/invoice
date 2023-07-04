@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block container %}
+        <!-- form content -->
+        <div class="invoiceview-body row">
+          <div class="invoice-left invoice-column col-lg-4 pl-3 pr-0">
+            <div class="list-box">
+              <div class="btn-toolbar ">
+                <button type="button" class="item-btn btn  dropdown-toggle dropdown-toggle-split border-0"
+                  style="outline: none;" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="visually-hidden">Toggle Dropdown</span>Invoices
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#">All</a></li>
+                  <li><a class="dropdown-item" href="#">Draft</a></li>
+                  <li><a class="dropdown-item" href="#">Customer Viewed</a></li>
+                  <li><a class="dropdown-item" href="#">Partially Paid</a></li>
+                  <li><a class="dropdown-item" href="#">Unpaid</a></li>
+                  <li><a class="dropdown-item" href="#"> Overdue</a></li>
+                  <li><a class="dropdown-item" href="#">Payment Initiated</a></li>
+                  <li><a class="dropdown-item" href="#">Paid</a></li>
+                  <li><a class="dropdown-item" href="#">Void</a></li>
+                </ul>
+              </div>
+              <div class=" btn-toolbar  ">
+                <div class="btn-group mr-1" style="height:35px">
+                  <button id="addLineButton" type="button" class="btn btn-primary">New</button>
+                  <button type="button" class="btn dropdown-toggle dropdown-toggle-split btn-primary"
+                    data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">New Invoice</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="#">New Recurring invoice</a></li>
+                    <li><a class="dropdown-item" href="#">New Credit Note</a></li>
+                  </ul>
+                </div>
+                <div class="dropdown btn-group list-sorter" style="height:35px">
+                  <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#" role="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Created Time</a></li>
+                    <li><a class="dropdown-item" href="#">Last Modified</a></li>
+                    <li><a class="dropdown-item" href="#">Date</a></li>
+                    <li><a class="dropdown-item" href="#">Invoice#</a></li>
+                    <li><a class="dropdown-item" href="#">Order Number</a></li>
+                    <li><a class="dropdown-item" href="#">Due Date</a></li>
+                    <li><a class="dropdown-item" href="#">Amount</a></li>
+                    <li><a class="dropdown-item" href="#">Balance Due</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Import Invoices</a></li>
+                    <li><a class="dropdown-item" href="#">Export Invoices</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Export Current View</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Preferences</a></li>
+                    <li><a class="dropdown-item" href="#">Manage Custom Fields</a></li>
+                    <li><a class="dropdown-item" href="#">Online Payments</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="#">Refresh List</a></li>
+
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive overflow-initial">
+              <table class="table zi-table">
+                <tbody>
+                  <tr>
+                    <td class="selection-cell">
+                      <input class="checkbox  cursor-pointer align-middle" type="checkbox" aria-checked="false">
+                    </td>
+                    <td>
+                      <div class="list-primary">
+                        <div class="name" title="Kantipur Infotech">{{invoice_object.customer_name.company_name}}</div>
+                        <span class="float-right amount">NPR252.00</span>
+                      </div>
+                      <div class="list-secondary">
+                        <div>
+                          <a class="text-primary active number">{{invoice_object.invoice_number}}</a>
+                          <span class="text-muted separationline">{{invoice_object.invoice_date}}</span>
+                        </div>
+                        <span class="float-right text-uppercase font-xs text-overdue">{{invoice_object.due_date}} &nbsp; </span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="invoice-right invoice-column col-lg-8 p-0">
+            <div class="fill header d-flex justify-content-between px-4">
+              <div class="align-self-center">
+                <div class="d-inline-block">
+                  <span class="page-header-title">{{invoice_object.invoice_number}}</span>
+                </div>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="d-inline-block">
+                  <span class="position-relative">
+                    <span class="linked-text">
+                      <i class="fa-solid fa-paperclip"></i>
+                      <span class="pr-2">Attachments</span>
+                    </span>
+                  </span>
+                  <span class="separationline px-3">
+                    <i class="fa-regular fa-message"></i>
+                    <span>Commment & History</span>
+                  </span>
+                  <span class="close-entity close-details close-details-right pt-1 separationline"><svg version="1.1"
+                      id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 512 512"
+                      xml:space="preserve" class="icon icon-xs" style="height: 14px;">
+                      <path
+                        d="M455.2 9.2L256 208.4 56.8 9.2C44.5-3.1 24.6-3.1 12.2 9.2l-2.9 2.9C-3 24.4-3 44.4 9.3 56.7L208.4 256 9.2 455.2c-12.3 12.3-12.3 32.3 0 44.6l2.9 2.9c12.3 12.3 32.3 12.3 44.6 0L256 303.6l199.2 199.2c12.3 12.3 32.3 12.3 44.6 0l2.9-2.9c12.3-12.3 12.3-32.3 0-44.6L303.6 256 502.8 56.8c12.3-12.3 12.3-32.3 0-44.6l-2.9-2.9c-12.5-12.4-32.4-12.4-44.7-.1z">
+                      </path>
+                    </svg></span>
+                </div>
+              </div>
+            </div>
+            <div class="sidebar-nav">
+              <ul class="details-menu-bar nav flex-nowrap">
+                <li class="nav-item ">
+                  <button class="details-menu-item text-center nav-link over-flow " type="button">
+                    <i class="fa-solid fa-pen"></i>
+                  <a href="{% url 'edit' id=invoice_object.id %}"> <span>Edit</span></a> 
+                  </button>
+                </li>
+                <li class="nav-item ">
+                  <button class="details-menu-item text-center nav-link over-flow " type="button">
+                    <i class="fa-regular fa-envelope"></i>
+                    <a href="email.html" >Send Mail</a>
+                  </button>
+                </li>
+                <li class="nav-item ">
+                  <button class="details-menu-item text-center nav-link over-flow" type="button" data-bs-toggle="modal"
+                    data-bs-target="#shareModal">
+                    <i class="fa-solid fa-up-right-from-square"></i>
+                    <span>Share</span>
+                  </button>
+                  <!-- modal portion -->
+                  <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h4 class="modal-title fs-5" id="exampleModalLabel">Share Invoice Link</h4>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <span class="text-muted">Visibility:
+                            <!-- Example single danger button -->
+                            <div class="btn-group">
+                              <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown"
+                                aria-expanded="false" style="color: red;
+                                padding-top: 0px;
+                                font-size: 13px;
+                            ">
+                                Public
+                              </button>
+                              <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">Action</a></li>
+                                <li><a class="dropdown-item" href="#">Another action</a></li>
+                                <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                <li>
+                                  <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="#">Separated link</a></li>
+                              </ul>
+                            </div>
+                          </span>
+                          <div class="text-muted font-small mb-4">Select an expiration date and generate the link to
+                            share it with your customer. Remember that anyone who has access to this link can view,
+                            print or download it.</div>
+                          <div class="row">
+                            <div class="col-lg-9">
+                              <p class="text-danger" required="">Link Expiration Date*</p>
+                              <input placeholder="dd MMM yyyy" class="date-picker form-control" type="date">
+                              <div class="font-xxs pt-2"><svg xmlns="http://www.w3.org/2000/svg" id="Layer_2"
+                                  data-name="Layer 2" viewBox="0 0 430 430"
+                                  class="icon icon-sm align-middle text-muted">
+                                  <g id="Layer_1-2" data-name="Layer 1">
+                                    <path
+                                      d="M367 63a214 214 0 00-304 0 214 214 0 00152 367 214 214 0 00215-215c0-57-22-111-63-152zm21 152a173 173 0 01-346 0 173 173 0 01346 0z">
+                                    </path>
+                                    <path
+                                      d="M236 176v154a21 21 0 01-42 0V176a21 21 0 1142 0zm0-75a21 21 0 01-2 10 21 21 0 01-15 10 23 23 0 01-6 1 24 24 0 01-6-2 21 21 0 01-13-15 20 20 0 013-14 21 21 0 0116-11 22 22 0 0110 1 19 19 0 015 3 23 23 0 014 5 21 21 0 014 12z">
+                                    </path>
+                                  </g>
+                                </svg>&nbsp;&nbsp;By default, the link is set to expire 90 days from today.</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Generate Link</button>
+                          <button type="button" class="btn btn-secondary">Disable All Active Links</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+                <li class="nav-item ">
+                  <div class="dropdown" style="height: 100%;">
+                    <button class="btn  dropdown-toggle details-menu-item" type="button" data-bs-toggle="dropdown"
+                      aria-expanded="false" style="font-size: 13px; height: 100%;">
+                      <i class="fa-regular fa-clock"></i> Reminders
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#">Send Now</a></li>
+                      <li><a class="dropdown-item" href="#">Stop Reminders</a></li>
+                      <li><a class="dropdown-item" href="#">Expected Payment Date</a></li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="nav-item ">
+                  <div class="dropdown" style="height: 100%;">
+                    <button class="btn  dropdown-toggle details-menu-item" type="button" data-bs-toggle="dropdown"
+                      aria-expanded="false" style="font-size: 13px; height: 100%;">
+                      <i class="fa-regular fa-file-pdf"></i> PDF/Print
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#">PDF</a></li>
+                      <li><a class="dropdown-item" href="#">Print</a></li>
+                      <li><a class="dropdown-item" href="#">Print Delivery Note</a></li>
+                      <li><a class="dropdown-item" href="#">Print Packing Slip</a></li>
+                    </ul>
+                  </div>
+                </li>
+                <li class="nav-item ">
+                  <div class="dropdown" style="height: 100%;">
+                    <button class="btn  dropdown-toggle details-menu-item" type="button" data-bs-toggle="dropdown"
+                      aria-expanded="false" style="font-size: 13px; height: 100%;">
+                      <i class="fa-regular fa-circle-down"></i> Record Payment
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#">Record Payment</a></li>
+                      <li><button class="dropdown-item" href="#"  data-bs-toggle="modal"
+                        data-bs-target="#writeoffModal">Write Off</button></li>
+                      <!-- modal portion       -->
+                      <div class="modal fade" id="writeoffModal" tabindex="-1" aria-labelledby="sharemodal"
+                      aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h4 class="modal-title fs-5" id="sharemodal">Share Invoice Link</h4>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <span class="text-muted">Visibility:
+                              <!-- Example single danger button -->
+                              <div class="btn-group">
+                                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown"
+                                  aria-expanded="false" style="color: red;
+                                  padding-top: 0px;
+                                  font-size: 13px;
+                              ">
+                                  Public
+                                </button>
+                                <ul class="dropdown-menu">
+                                  <li><a class="dropdown-item" href="#">Action</a></li>
+                                  <li><a class="dropdown-item" href="#">Another action</a></li>
+                                  <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                  <li>
+                                    <hr class="dropdown-divider">
+                                  </li>
+                                  <li><a class="dropdown-item" href="#">Separated link</a></li>
+                                </ul>
+                              </div>
+                            </span>
+                            <div class="text-muted font-small mb-4">Select an expiration date and generate the link to
+                              share it with your customer. Remember that anyone who has access to this link can view,
+                              print or download it.</div>
+                            <div class="row">
+                              <div class="col-lg-9">
+                                <p class="text-danger" required="">Link Expiration Date*</p>
+                                <input placeholder="dd MMM yyyy" class="date-picker form-control" type="date">
+                                <div class="font-xxs pt-2"><svg xmlns="http://www.w3.org/2000/svg" id="Layer_2"
+                                    data-name="Layer 2" viewBox="0 0 430 430"
+                                    class="icon icon-sm align-middle text-muted">
+                                    <g id="Layer_1-2" data-name="Layer 1">
+                                      <path
+                                        d="M367 63a214 214 0 00-304 0 214 214 0 00152 367 214 214 0 00215-215c0-57-22-111-63-152zm21 152a173 173 0 01-346 0 173 173 0 01346 0z">
+                                      </path>
+                                      <path
+                                        d="M236 176v154a21 21 0 01-42 0V176a21 21 0 1142 0zm0-75a21 21 0 01-2 10 21 21 0 01-15 10 23 23 0 01-6 1 24 24 0 01-6-2 21 21 0 01-13-15 20 20 0 013-14 21 21 0 0116-11 22 22 0 0110 1 19 19 0 015 3 23 23 0 014 5 21 21 0 014 12z">
+                                      </path>
+                                    </g>
+                                  </svg>&nbsp;&nbsp;By default, the link is set to expire 90 days from today.</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Generate Link</button>
+                            <button type="button" class="btn btn-secondary">Disable All Active Links</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+              <div class="sidebar-content m-5 p-4 border rounded ">
+                <div class="border rounded m-3 p-4 border-left-shadow" >
+                  <div class="d-flex">
+                    <div class="w-70 mr-3">
+                      <div class="d-flex">
+                        <span class="icon-sidenav"><i class="fa-solid fa-download"></i></span>
+                        <span class="content-sidenav">Record payment for the invoice</span>
+                      </div>
+                      <div class="mt-1">
+                        If you’ve received a partial or full payment from your customer towards this invoice,you can
+                        record it.
+                      </div>
+                    </div>
+                    <div class="ml-auto">
+                      <div class="btn-group">
+                        <button class="btn btn-primary font-small text-nowrap">Record Payment</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mb-0 list-inline">
+                    <div class="p-3 mt-4 rounded color-grey">
+                      <span class="pl-1">Get paid faster by setting up online payment gateways.</span>
+                      <a class="adec"> Set up Now</a>
+                    </div>
+                  </div>
+                </div>  
+                <div class="pdf-container m-5">
+                  <div class="pdf-template">
+                    <div class="pdf-template-body mt-3">
+                      <table style="width: 100%; table-layout: fixed; padding-top: 40px;">
+                        <tbody>
+                          <tr>
+                            <td style="vertical-align: top; width: 50%;">
+                              <span class="pdf-orgname">
+                                <b>Kantipur infotech</b>
+                              </span><br>
+                              <span class="pdf-label">
+                                <span style="white-space: pre-wrap;word-wrap: break-word;"
+                                  id="tmp_org_address">Nepal</span>
+                              </span>
+                            </td>
+                            <td style="width:50%; text-align: right; vertical-align: top;">
+                              <span class="pdf-entity-type">INVOICE</span>
+                              <br>
+                              <span class="pdf-label" style="font-size: 10pt;">
+                                <b># {{invoice_object.invoice_number}}</b>
+                              </span>
+                              <div style="margin-top: 20px; clear: both;">
+                                <span style="font-size:8pt;"><b></b></span><br>
+                                <span style="font-size:12pt;"><b>NPR252.00</b></span>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <table style="clear: both; width: 100%; margin-top: 30px; table-layout: fixed;">
+                        <tbody>
+                          <tr>
+                            <td style="width: 60%; vertical-align: bottom; word-wrap: break-word;">
+                              <div class="billto-section">
+                                <label style="font-size: 10pt;" class="pdf-label">Bill To</label><br>
+                                <span>
+                                  <strong>
+                                    <span class="pdf-customer-name">
+                                      <a href="#">{{invoice_object.customer_name.company_name}}</a>
+                                    </span>
+                                  </strong>
+                                </span>
+                              </div>
+                            </td>
+                            <td style="vertical-align:bottom; width: 40%; text-align: right;">
+                              <table id="tableprop">
+                                <tbody>
+                                  <tr>
+                                    <td style="padding: 5px 10px 5px 0px; font-size: 10pt; text-align: right;">
+                                      <span class="pcs-label">Invoice Date :</span>
+                                    </td>
+                                    <td class="text-right">
+                                      <span id="pdf-entity-date">{{invoice_object.invoice_date}}</span>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 10px 5px 0px; font-size: 10pt; text-align: right;">
+                                      <span class="pdf-label">Terms :</span>
+                                    </td>
+                                    <td class="text-right">
+                                      <span>Due on Receipt</span>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="padding: 5px 10px 5px 0px; font-size: 10pt; text-align: right;">
+                                      <span class="pdf-label">Due Date :</span>
+                                    </td>
+                                    <td class="text-right">
+                                      <span>{{invoice_object.due_date}}</span>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+
+                            </td>
+                          </tr>
+                        </tbody>
+
+                      </table>
+                      <div class="subject-field mt-2">
+                        <div class="pdf-label">Subject:{{invoice_object.subject}}</div>
+                        <div class="subject-block-value">yo bill ho</div>
+                      </div>
+                      <table style="width: 100%; margin-top: 20px; table-layout: fixed;" class="itemtable">
+                        <thead>
+                          <tr style="height:32px;">
+                            <td style="padding: 5px 0px 5px 5px;width: 5%;text-align: center;" id=""
+                              class="pdf-itemtable-header ">
+                              #
+                            </td>
+                            <td style="padding: 5px 10px 5px 20px;width: 11%;text-align: left;" id=""
+                              class="pdf-itemtable-header ">
+                              Item &amp; Description
+                            </td>
+                            <td style="padding: 5px 10px 5px 5px;width: 11%;text-align: right;" id=""
+                              class="pdf-itemtable-header ">
+                              Qty
+                            </td>
+                            <td style="padding: 5px 10px 5px 5px;width: 11%;text-align: right;" id=""
+                              class="pdf-itemtable-header ">
+                              Rate
+                            </td>
+                            <td style="padding: 5px 10px 5px 5px;width: 15%;text-align: right;" id=""
+                              class="pdf-itemtable-header ">
+                              Amount
+                            </td>
+
+                          </tr>
+                        </thead>
+                        <tbody class="itembody">
+                          <tr class="breakrow-inside breakrow-after">
+                            <td rowspan="1" valign="top"
+                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                              class="pdf-item-row"> 1
+                            </td>
+                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                              <div>
+                                <div>
+                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                                    id="tmp_item_description">churot</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_qty">1.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_rate">10.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
+                              <span id="tmp_item_amount">10.00</span>
+                            </td>
+                          </tr>
+                          <tr class="breakrow-inside breakrow-after">
+                            <td rowspan="1" valign="top"
+                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                              class="pdf-item-row"> 1
+                            </td>
+                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                              <div>
+                                <div>
+                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                                    id="tmp_item_description">churot</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_qty">1.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_rate">10.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
+                              <span id="tmp_item_amount">10.00</span>
+                            </td>
+                          </tr>
+                          <tr class="breakrow-inside breakrow-after">
+                            <td rowspan="1" valign="top"
+                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                              class="pdf-item-row"> 1
+                            </td>
+                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                              <div>
+                                <div>
+                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                                    id="tmp_item_description">churot</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_qty">1.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_rate">10.00</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
+                              <span id="tmp_item_amount">10.00</span>
+                            </td>
+                          </tr>
+
+
+                        </tbody>
+                      </table>
+                      <div style="width: 100%; margin-top: 1px;">
+                        <div class="total-section">
+                          <table class="pdf-totals float-right">
+                            <tbody>
+                              <tr>
+                                <td class="total-section-label text-right">Sub Total</td>
+                                <td id="pdf_subtotal" class="total-section-value text-right">252.00</td>
+                              </tr>
+                              <tr>
+                                <td class="total-section-label text-right"><b>Total</b></td>
+                                <td id="pdf_total" class="total-section-value text-right"><b>NPR252.00</b></td>
+                              </tr>
+                              <tr style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
+                                <td class="total-section-label text-right"><b>Balance Due</b></td>
+                                <td id="pdf_balance_due" class="total-section-value text-right"><b>NPR252.00</b></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div style="clear:both; padding-top:50px; width:100%;">
+                        <label style="font-size: 10pt;" id="pdf_notes_label" class="pdf-label">Notes</label><br>
+                        <p style="margin-top:7px; word-wrap: break-word;" class="pdf-notes">
+                          Thanks for your business. Tobaco causes cancer</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3 ml-5">
+                  <h4 style="font-weight: 400; margin: 35px 0;">More Information</h4>
+                  <div class="row info-row">
+                  <label class="text-muted col-lg-3">Selected Emails </label>
+                   <div class="col-lg-9">sanya@dfdsfd.com</div>
+                  </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  </div>
+  </div>
+  </div>
+  <script src='main.js'></script>
+  {% endblock %}

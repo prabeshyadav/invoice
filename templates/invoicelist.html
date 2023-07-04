@@ -207,20 +207,18 @@
                     </tr>
                   </thead>
                   <tbody>
-                    
+                  
+                    <tr class="row-bg" onclick="redirectToDetails('{% url 'indexview' id=user.id %}')">
                       <td>{{forloop.counter}}</td>
                       <td>{{user.invoice_date}}</td>
                       <td>{{user.invoice_number}}</td>
                       <td>{{user.order_number}}</td>
                       <td>{{user.customer_name.fullname}}</td>
-
                       <td>{{user.due_date}}</td>
                       <td>{{user.amount}}</td>
                       <td>56789</td>
-                      
-                    
-                    
                     </tr>
+                    
                     
                     {% endfor %}
                   </tbody>
@@ -240,5 +238,10 @@
   </div>
   <script src='main.js'></script>
   
+  <script>
+    function redirectToDetails(url) {
+      window.location.href = url;
+    }
+  </script>
 
   {% endblock %}
