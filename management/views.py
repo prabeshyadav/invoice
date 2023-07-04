@@ -1,4 +1,4 @@
-from django.shortcuts import render, HttpResponse,redirect
+from django.shortcuts import render, HttpResponse,redirect, get_object_or_404,HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import *
 from django.views import View
@@ -6,7 +6,8 @@ from django.contrib import messages
 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-
+from management.models import AddCustomer
+from django.urls import reverse
 # Create your views here.
 from .models import *
 def register(request):
@@ -106,11 +107,11 @@ def InvoiceView(request):
         if fm.is_valid():
             fm.save()
             messages.success(request, "Successfully Added Customer." )
-            return redirect('invoicelist')
+            return redirect(reverse('invoicelist'))
         
         else:
             print("form is invalid")
-            messages.error(request, fm.errors )
+            messages.error(request, fm.errors)
             print(fm.errors)
             
     else:
@@ -164,3 +165,37 @@ def getItem():
     
 def home(reequest):
     return render(reequest,'base.html',)
+
+def IndexView(request, id):
+    invoice_object = get_object_or_404(Invoice, id=id)
+    context={'invoice_object': invoice_object}
+    return render(request,'indexview.html',context)
+
+def email(request):
+    context={}
+    
+    return render(request,'email.html',context)
+
+def invoicepage(request,id):
+    user=Invoice.objects.get(id=id)
+    context={'user':user}
+    return render(request,'',context)
+
+def EditView(request,id):
+    data = {
+        'user': AddCustomer.objects.all(),
+    }
+    obj=get_object_or_404(Invoice,id=id)
+    if request.method == 'POST':
+        form=InvoiceForm(request.POST or None,instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Invoice updated successfully.")
+            return redirect(reverse('indexview', id=id))
+        else:
+            messages.error(request, "Form is invalid. Please check the entered data.")    
+    else:
+        form = InvoiceForm(instance=obj)
+        
+    context={"form":form,"obj":obj, 'data': data}
+    return render(request,'invoices.html',context)

@@ -15,5 +15,9 @@ urlpatterns = [
     path('table',views.tableView,name='table'),
     path('invoicelist',views.InvoiceListView,name='invoicelist'),
     #path('',views.AddCustomer.as_view(),name='index')
-    path('home/',views.home,name='home')
+    path('home/',views.home,name='home'),
+    path('indexview/<int:id>/',views.IndexView,name='indexview'),
+    path('email',views.email,name='email'),
+    
+    path('edit/<int:id>/',views.EditView,name='edit')
 ]
