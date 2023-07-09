@@ -139,7 +139,7 @@
                 <li class="nav-item ">
                   <button class="details-menu-item text-center nav-link over-flow " type="button">
                     <i class="fa-regular fa-envelope"></i>
-                    <a href="email.html" >Send Mail</a>
+                    <a href="{% url 'email' id=invoice_object.id %}" >Send Mail</a>
                   </button>
                 </li>
                 <li class="nav-item ">
@@ -229,8 +229,9 @@
                       <i class="fa-regular fa-file-pdf"></i> PDF/Print
                     </button>
                     <ul class="dropdown-menu">
-                      <li><a class="dropdown-item" href="#">PDF</a></li>
-                      <li><a class="dropdown-item" href="#">Print</a></li>
+                      <li><a class="dropdown-item" href="{% url 'pdf' %}">PDF</a></li>
+
+                      <li><a class="dropdown-item" href="">Print</a></li>
                       <li><a class="dropdown-item" href="#">Print Delivery Note</a></li>
                       <li><a class="dropdown-item" href="#">Print Packing Slip</a></li>
                     </ul>

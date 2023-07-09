@@ -38,3 +38,8 @@ class CreateUserForm(UserCreationForm):
         fields=['username','email','password1','password2']
     
     
+class TableItemsForm(forms.Form):
+    items_details=forms.CharField(max_length=225)
+    quality=forms.IntegerField()
+    rate=forms.IntegerField()
+    amount=models.IntegerField()
