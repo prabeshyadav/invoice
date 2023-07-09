@@ -19,5 +19,8 @@ urlpatterns = [
     path('indexview/<int:id>/',views.IndexView,name='indexview'),
     path('email',views.email,name='email'),
     
-    path('edit/<int:id>/',views.EditView,name='edit')
+    path('edit/<int:id>/',views.EditView,name='edit'),
+    path('email/<int:id>/', views.email, name='email'),
+    path('pdf/',views.generate_pdf,name='pdf'),
+    path('pdfd',views.pdf,name='pdfd')
 ]

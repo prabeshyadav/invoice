@@ -3,6 +3,12 @@ from django.contrib.auth import authenticate, login, logout
 from .forms import *
 from django.views import View
 from django.contrib import messages
+from .models import *
+from weasyprint import HTML, CSS
+from django.template.loader import render_to_string
+import tempfile
+import datetime
+
 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
@@ -105,7 +111,43 @@ def InvoiceView(request):
     if request.method=='POST':
         fm=InvoiceForm(request.POST)
         if fm.is_valid():
-            fm.save()
+            obj = fm.save()
+            invoice_ids = obj.id
+            
+            items_detail = request.POST.getlist('items_detail[]')
+            quality = request.POST.getlist('quality[]')
+            rate = request.POST.getlist('rate[]')
+            amount = request.POST.getlist('quantity1[]')
+            
+            print("-----------------Items detail------------")
+            print(quality)
+            
+            
+            for i, q, r, a in zip(items_detail, quality, rate, amount):
+                print("data")
+                print(i)
+                form_date={
+                    'items_detail':i,
+                    'quality':q,
+                    'rate':r,
+                    'amount':a,
+                    'invoice_id':invoice_ids,
+                }
+                form=TableItemsForm(form_date)
+                print(form)," alskdjlaksdjlkajsd oiaui oisud"
+                if form.is_valid():
+                    print(" data created")
+                    ob = TableItems.objects.create(**form.cleaned_data)
+                    print(ob.id)
+            print("lllllllll")
+            
+            # else:
+            #     messages.error(request, "Please fill the form with correct data")
+            #     return redirect('invoicelist')
+        
+            
+            
+            #return HttpResponse(request.post.items())
             messages.success(request, "Successfully Added Customer." )
             return redirect(reverse('invoicelist'))
         
@@ -171,10 +213,24 @@ def IndexView(request, id):
     context={'invoice_object': invoice_object}
     return render(request,'indexview.html',context)
 
-def email(request):
-    context={}
+
+
+
+
+
+def email(request,id):
+    mail=get_object_or_404(Invoice,id=id)
+    context={'mail':mail}
     
     return render(request,'email.html',context)
+
+
+
+
+
+
+
+
 
 def invoicepage(request,id):
     user=Invoice.objects.get(id=id)
@@ -191,7 +247,7 @@ def EditView(request,id):
         if form.is_valid():
             form.save()
             messages.success(request, "Invoice updated successfully.")
-            return redirect(reverse('indexview', id=id))
+            return redirect('indexview', id=id)
         else:
             messages.error(request, "Form is invalid. Please check the entered data.")    
     else:
@@ -199,3 +255,31 @@ def EditView(request,id):
         
     context={"form":form,"obj":obj, 'data': data}
     return render(request,'invoices.html',context)
+
+
+def generate_pdf(request):
+    
+    
+    response = HttpResponse(content_type='application/pdf')
+    response ['Content-Disposition'] = 'filename=invoice.pdf' +\
+        str(datetime.datetime.now())+'.pdf'
+        
+    response['Content-Transfer-Encoding'] = 'binary'
+    html_string=render_to_string('pdf.html',{'invoice':[],'total':0})
+    
+    html=HTML(string=html_string)
+    result=html.write_pdf()
+    
+    with tempfile.NamedTemporaryFile(delete=True) as output:
+        output.write(result)
+        output.flush()
+        output=open(output.name,'rb')
+        response.write(output.read())
+        
+    return response
+    
+    
+    
+
+def pdf(request):
+    return render(request,'pdf.html')

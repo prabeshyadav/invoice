@@ -50,4 +50,10 @@ class Items(models.Model):
     selling_price=models.IntegerField()
     tax=models.IntegerField()
     unit=models.CharField(max_length=255)
-    
+
+class TableItems(models.Model):
+    items_details=models.CharField(max_length=225)
+    quality=models.IntegerField()
+    rate=models.IntegerField()
+    amount=models.IntegerField()
+    invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE)
