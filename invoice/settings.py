@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'management',
     
+    
+    
 
 ]
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"

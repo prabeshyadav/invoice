@@ -16,7 +16,7 @@
                 {% endfor %}
             </ul>
             {% endif %}
-          <form  method='post' action='{% url 'invoice' %}'> 
+          <form  method='post' action=''> 
             {% csrf_token %}
             <div class="form-first pl-1">
               <div class="col-lg-8 ">
@@ -25,7 +25,7 @@
                     <span class="col-form-label col-lg-3 text-danger"> Customer*</span>
                     <div class="col-lg-9 d-flex">
                       <select class="form-control col-lg-9 bg-white" id="customer*"  name="customer_name" style="padding: 0px;" >
-                        <option selected disabled value="{{obj.customer_name}}"> Select Customer</option>
+                        <option selected disabled value=""> Select Customer</option>
                         {% for user in users %}
                           <option value="{{user.id}}" > {{user.first_name}}</option>
                         {% endfor %}
@@ -120,18 +120,18 @@
                     <tbody class="line-item-body">
                       <tr class="line-item new-line-item">
                         <td class="line-item-column">
-                          <input type-="text" class="text-field  form-control">
+                          <input type-="text" name='items_detail[]' class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column">
+                          <input type-="text" name='quality[]' class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column">
+                          <input type-="text" name="rate[]" class="text-field  form-control">
                         </td>
                         <td class="line-item-column">
                           <input type-="text" class="text-field  form-control">
                         </td>
-                        <td class="line-item-column">
-                          <input type-="text" class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column">
-                          <input type-="text" class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column">0.00
+                        <td class="line-item-column" name='amount[]'>0.00
                         </td>
                       </tr>
                     </tbody>
@@ -281,8 +281,11 @@
             <div class="text-muted mt-9 bg-white ml-3"><b>Additional Fields: </b>Start adding custom fields for your invoices by going to <i>Settings <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 512 512" xml:space="preserve" class="icon icon-sm"><path d="M14.5 429.9h244c6.6 0 12 5.4 12 12V500c0 9.9 11.2 15.5 19.2 9.6L502.1 352c6.5-4.8 6.5-14.5 0-19.3L289.7 175.1c-7.9-5.9-19.2-.2-19.2 9.6v58.1c0 6.6-5.4 12-12 12h-244c-6.6 0-12 5.4-12 12v151c0 6.7 5.4 12.1 12 12.1z" id="Layer_2_1_"></path></svg> Preferences <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 512 512" xml:space="preserve" class="icon icon-sm"><path d="M14.5 429.9h244c6.6 0 12 5.4 12 12V500c0 9.9 11.2 15.5 19.2 9.6L502.1 352c6.5-4.8 6.5-14.5 0-19.3L289.7 175.1c-7.9-5.9-19.2-.2-19.2 9.6v58.1c0 6.6-5.4 12-12 12h-244c-6.6 0-12 5.4-12 12v151c0 6.7 5.4 12.1 12 12.1z" id="Layer_2_1_"></path></svg> Invoices</i></div>
             <!-- button -->
             <div class="btn-footer-invoice d-flex my-5">
-              <div  class="btn-group mx-3"><button class="border-0  btn-invoice" fdprocessedid="g26fur"> Save as Draft </button></div>          
-              
+              {% if obj.id %}
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur"> Update Invoice </button></div>
+              {% else %}
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur"> Create Invoice </button></div>                    
+              {% endif %}
                 <div class="btn-group btn-invoice mr-3" style="width: 10rem;">
                   <button type="button" class="btn btn-primary">Upload File</button>
                   <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-primary" data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="h2v77o">
