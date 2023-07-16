@@ -16,11 +16,16 @@ urlpatterns = [
     path('invoicelist',views.InvoiceListView,name='invoicelist'),
     #path('',views.AddCustomer.as_view(),name='index')
     path('home/',views.home,name='home'),
-    path('indexview/<int:id>/',views.IndexView,name='indexview'),
+    path('invoice-detail/<int:id>/',views.IndexView,name='indexview'),
     path('email',views.email,name='email'),
     
     path('edit/<int:id>/',views.EditView,name='edit'),
     path('email/<int:id>/', views.email, name='email'),
-    path('pdf/',views.generate_pdf,name='pdf'),
-    path('pdfd',views.pdf,name='pdfd')
+    # path('pdf/',views.generate_pdf,name='pdf'),
+    #path('pdf/', views.GeneratePdf.as_view(), name='pdf'),
+    #path('pdfd',views.,name='pdfd'),
+    #path('pdf/',views.generate_pdf_view, name='pdf'),
+    #path('pdf/',views.ViewPdf.as_view(),name='pdf')
+    #path('pdf/',views.xhtml_to_pdf,name='pdf')
+    path('pdf/<int:id>/',views.pdf,name='pdf')
 ]
