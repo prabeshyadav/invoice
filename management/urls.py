@@ -27,5 +27,5 @@ urlpatterns = [
     #path('pdf/',views.generate_pdf_view, name='pdf'),
     #path('pdf/',views.ViewPdf.as_view(),name='pdf')
     #path('pdf/',views.xhtml_to_pdf,name='pdf')
-    path('pdf/<int:id>/',views.pdf,name='pdf')
+    path('pdf/<int:id>/',views.pdf,name='PfdMd')
 ]
