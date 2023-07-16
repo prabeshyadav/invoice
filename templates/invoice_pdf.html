@@ -1,0 +1,330 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bootstrap demo</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-dropdown/2.0.3/jquery.dropdown.min.js">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/js/bootstrap.bundle.min.js"></script>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  
+  <style>
+    body{
+      letter-spacing: normal !important;
+      line-height: normal !important;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div style=" max-width: 8.27in;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  margin-bottom: 35px;
+  box-shadow: 0 0 6px #ccc;
+  margin-top: 10px;">
+    <div style="font-size: 9pt;
+    color: #333333;
+    background: #ffffff;">
+      <div style=" margin-top: 30px;">
+        <table style="width: 100%; table-layout: fixed; padding-top: 40px;">
+          <tbody>
+            <tr>
+              <td style="vertical-align: top; width: 50%;">
+                <!-- <img src="https://plus.unsplash.com/premium_photo-1688464907358-4cf058635e19?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHwyfHx8ZW58MHx8fHx8&auto=format&fit=crop&w=500&q=60" alt=""> -->
+                <img src=" {% static 'images/logo.png' %}  " style="width: 210px;">
+              </td>
+              <td style="width:50%; text-align: right; vertical-align: top;">
+                <span style="font-size: 28pt;
+                color: #000000;">invoice</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        12345
+        <table style="clear: both; width: 100%; margin-top: 30px; table-layout: fixed;">
+          <tbody>
+            <tr>
+              <td style="width: 60%;">
+                <div class="billto-section">
+                  <label style="font-size: 12px; margin-bottom: 0;" class="pdf-label">Invoice To 1234</label><br>
+                  <span>
+                    <strong>
+                      <span class="pdf-customer-name">
+                        <a href="#" style="color: #000;font-size: 18px;font-weight: 590;line-height: 30px;">Kantipur
+                          Infotech</a>
+                      </span> 
+                    </strong>
+                  </span>
+                  <div class="pdf-website" style="color: #646464;font-size: 10px;font-weight: 400;">
+                    <span>Website: </span><span style="padding-left: 1px;">flavourbakery.com</span>
+                    <br>
+                    <span>Email: </span><span style="padding-left: 1px;">flavourbakery.com</span>
+                  </div>
+                </div>
+              </td>
+              <td style="vertical-align:bottom; width: 50%; float: right;">
+                <table id="tableprop">
+                  <tbody>
+                    <tr>
+                      <td style="padding: 5px 10px 2px 0px; font-size: 10pt; text-align: right;">
+                        <span class="pcs-label">Invoice:</span>
+                      </td>
+                      <td >
+                        {{invoice_object.invoice_number}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 5px 10px 2px 0px; font-size: 10pt; text-align: right;">
+                        <span class="pdf-label">Date :</span>
+                      </td>
+                      <td class="text-right">
+                        <span>20 Jun 2023</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 5px 10px 2px 0px; font-size: 10pt; text-align: right;">
+                        <span class="pdf-label">Due Date :</span>
+                      </td>
+                      <td class="text-right">
+                        <span>20 Jun 2023</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+        <table style="width: 100%; margin-top: 20px; table-layout: fixed;" class="itemtable">
+          <thead>
+            <tr style="height:32px; border-bottom: 1px solid #adadad; color: #444; font-weight: 500;">
+              <td style="padding: 5px 0px 5px 5px;width: 5%;text-align: center;   font-size: 12px;" id="">
+                S.No.
+              </td>
+              <td style="padding: 5px 10px 5px 20px;width: 11%;text-align: left;  font-size: 9pt;
+                  " id="">
+                Item
+              </td>
+              <td style="padding: 5px 10px 5px 5px;width: 11%;text-align: right;  font-size: 9pt;
+                  " id="">
+                Qauntity
+              </td>
+              <td style="padding: 5px 10px 5px 5px;width: 11%;text-align: right;  font-size: 9pt;
+                  " id="">
+                Unit Price
+              </td>
+              <td style="padding: 5px 10px 5px 5px;width: 15%;text-align: right;   font-size: 9pt;
+                  " id="">
+                Amount
+              </td>
+
+            </tr>
+          </thead>
+          <tbody class="itembody" style=" border-bottom: 1px solid #adadad;">
+            <tr class="breakrow-inside breakrow-after">
+              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                class="pdf-item-row"> 1
+              </td>
+              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                <div>
+                  <div>
+                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                      id="tmp_item_description">churot</span>
+                  </div>
+                </div>
+              </td>
+              <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_qty">1.00</span>
+              </td>
+              <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_rate">10.00</span>
+              </td>
+              <td rowspan="1" class=" lineitem-column lineitem-content-right"
+                style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_amount">10.00</span>
+              </td>
+            </tr>
+            <tr class="breakrow-inside breakrow-after">
+              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                class="pdf-item-row"> 1
+              </td>
+              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                <div>
+                  <div>
+                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                      id="tmp_item_description">churot</span>
+                  </div>
+                </div>
+              </td>
+              <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_qty">1.00</span>
+              </td>
+              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_rate">10.00</span>
+              </td>
+              <td rowspan="1" class="lineitem-column lineitem-content-right "
+                style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_amount">10.00</span>
+              </td>
+            </tr>
+            <tr class="breakrow-inside breakrow-after">
+              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                class="pdf-item-row"> 1
+              </td>
+              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                <div>
+                  <div>
+                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                      id="tmp_item_description">churot</span>
+                  </div>
+                </div>
+              </td>
+              <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_qty">1.00</span>
+              </td>
+              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_rate">10.00</span>
+              </td>
+              <td rowspan="1" class="lineitem-column lineitem-content-right "
+                style="text-align: right; padding-right: 10px;">
+                <span id="tmp_item_amount">10.00</span>
+              </td>
+            </tr>
+
+
+          </tbody>
+        </table>
+        <div style="width: 100%; margin-top: 1px;">
+          <div style="width: 50%; float: left; vertical-align: top;">
+            <table style="font-size: 9pt; color: #000000; background-color: #ffffff; width: 100%; text-align: right;
+            ">
+              <tbody>
+                <tr>
+                  <td style="width:60%; vertical-align: top; text-align: left; padding: 5px 10px 5px 0;">
+                    <div class="payment-method">
+                      <label style="font-weight: 600;
+                      font-size: 16px; 
+                  ">Payment Method</label><br>
+                  <label style="font-size: 14px; margin-bottom: 0;color: #646464; line-height: 30px;" >Bank Info</label>
+                  <div class="pdf-paymentdetails" style="font-size: 14px;font-weight: 400;">
+                    <span>Bank Name</span><span style="padding-left: 40px;">Nabil bank</span>
+                    <br>
+                    <span>Account No </span><span style="padding-left: 33px;">
+                      311001752165</span><br>
+                    <span>Account Name</span><span style="padding-left: 18px;">Subarna Bhandari</span>
+                  </div>
+                  <label style="font-size: 14px; margin-bottom: 0;color: #646464; line-height: 30px;" >Esewa</label>
+                  <div class="pdf-paymentdetails" style="font-size: 14px;font-weight: 400;">
+                    <span>ID</span><span style="padding-left: 59px;">9844740360</span>
+                    <br>
+                    <span>Name</span><span style="padding-left: 33px;">
+                      Kantipur Infotech</span><br>
+                    <img src="{% static 'images/qr.png' %}" style="height: 76px; width: 75px;">
+                  </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="width: 50%;float: right;vertical-align: top;">
+            <table style="font-size: 9pt; color: #000000; background-color: #ffffff; width: 100%; text-align: right;
+              ">
+              <tbody>
+                <tr>
+                  <td style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Sub Total</td>
+                  <td id="pdf_subtotal"
+                    style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right;">NPR
+                    252.00</td>
+                </tr>
+                <tr>
+                  <td style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle; color:#FF3E3E;">
+                    Discount(10%)</td>
+                  <td id="pdf_discount"
+                    style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right; color: #FF3E3E;">
+                    NPR 252.00</td>
+                </tr>
+                <tr>
+                  <td style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Tax: Vat(13%)</td>
+                  <td id="pdf_tax"
+                    style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right;">NPR
+                    252.00</td>
+                </tr>
+                <tr style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
+                  <td style=" text-align: right;"><b>Balance Due</b></td>
+                  <td id="pdf_balance_due" class="total-section-value text-right"><b>NPR 252.00</b></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="clear:both; padding-top:10px; width:100%;">
+          <table style="width: 100%; table-layout: fixed;" class="itemtable">
+            <thead>
+              <tr style="height:32px; border-bottom: 1px solid #adadad; color: #444; font-weight: 500;">
+                <td style="padding: 5px 0px 5px 5px;width: 15%;text-align: left;   font-size: 16px; color: #121212;" id="">
+                  Terms and Conditions
+                </td>
+                <td style="padding: 5px 10px 5px 5px;width: 5%;text-align: right;   font-size: 16px; color: #121212;
+                    " id="">
+                  Amount Due
+                </td>
+  
+              </tr>
+            </thead>
+            <tbody class="itembody" style=" border-bottom: 1px solid #adadad;">
+              <tr class="breakrow-inside breakrow-after">
+                <td rowspan="1" valign="top" style="padding: 10px 60px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> Please follow the details mentioned on your contract.
+                </td>
+                <td rowspan="1" class=" lineitem-column lineitem-content-right" style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 24px;">
+                  <span id="item_amount">NPR 252.00</span>
+                </td>
+              </tr>  
+            </tbody>
+            
+          </table>
+          <table style="width: 100%; table-layout: fixed;" class="itemtable">
+            <tbody class="itembody" style=" border-bottom: 1px solid #adadad;">
+              <tr class="breakrow-inside breakrow-after">
+                <td rowspan="1" valign="top" style="padding: 10px 60px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> 
+                 <div style="color: #262626; font-weight: 600;">Contact Details</div>
+                 <div><span style="color: #262626; font-weight: 600;">P:</span><span>+977-9802340360</span></div>
+                </td>
+                <td rowspan="1" valign="top" style="padding: 10px 40px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> 
+                  <div>44600, New Baneshwor Kathmandu, Nepal</div>
+                </td>
+                <td rowspan="1" valign="top" style="padding: 10px 0px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> 
+                  <div><span style="color: #262626; font-weight: 600;">E:</span><span> kantipurinfotech@gmail.com</span></div>
+                  <div><span style="color: #262626; font-weight: 600;">P:</span><span> www.kantipurinfotech.com</span></div>
+                </td>
+                <td rowspan="1" valign="top" style="padding: 10px 0px 10px 5px;text-align: right;word-wrap: break-word; color:#d12323; font-size: 20px;" class="pdf-item-row"> THANK YOU!
+                </td>
+                
+              </tr>  
+            </tbody>
+            
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src='main.js'></script>
+</body>
+
+</html>

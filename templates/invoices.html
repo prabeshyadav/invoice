@@ -47,19 +47,19 @@
             </div>
             <div class="form-second" style="padding-left: 21px;">
               <div class="col-lg-8 p-0">
-                <div class="form-group">
+                {% comment %} <div class="form-group">
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3 text-danger">Invoice#*</span>
                     <div class="col-lg-4">
                       <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number' value="{{obj.invoice_number}}">
                     </div>
                   </div>
-                </div>
+                </div> {% endcomment %}
                 <div class="form-group">
                   <div class="row pt-2">
                     <span class="col-form-label col-lg-3">Order Number</span>
                     <div class="col-lg-4">
-                      <input type="text" class="form-control" id="orderno" name='order_number' value="{{obj.order_number}}" >
+                      <input type="number" class="form-control" id="orderno" name='order_number' value="{{obj.order_number}}" >
                     </div>
                   </div>
                 </div>
@@ -120,16 +120,32 @@
                     <tbody class="line-item-body">
                       <tr class="line-item new-line-item">
                         <td class="line-item-column">
-                          <input type-="text" name='items_detail[]' class="text-field  form-control">
+                          <input tyfa-pulse="text" name='items_details[]' class="text-field  form-control">
                         </td>
                         <td class="line-item-column">
-                          <input type-="text" name='quality[]' class="text-field  form-control">
+                          <input type="number" min='0' name='quality[]' class="text-field  form-control">
                         </td>
                         <td class="line-item-column">
-                          <input type-="text" name="rate[]" class="text-field  form-control">
+                          <input type="number" min='0' name="rate[]" class="text-field  form-control">
                         </td>
                         <td class="line-item-column">
-                          <input type-="text" class="text-field  form-control">
+                          <input type="text" class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column" name='amount[]'>0.00
+                        </td>
+                      </tr>
+                      <tr class="line-item new-line-item">
+                        <td class="line-item-column">
+                          <input tyfa-pulse="text" name='items_details[]' class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column">
+                          <input type="number" min='0' name='quality[]' class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column">
+                          <input type="number" min='0' name="rate[]" class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column">
+                          <input type="text" class="text-field  form-control">
                         </td>
                         <td class="line-item-column" name='amount[]'>0.00
                         </td>
@@ -282,12 +298,12 @@
             <!-- button -->
             <div class="btn-footer-invoice d-flex my-5">
               {% if obj.id %}
-                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur"> Update Invoice </button></div>
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur">Update Invoice </button></div>
               {% else %}
-                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur"> Create Invoice </button></div>                    
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur">save as drift </button></div>                    
               {% endif %}
                 <div class="btn-group btn-invoice mr-3" style="width: 10rem;">
-                  <button type="button" class="btn btn-primary">Upload File</button>
+                  <button type="button" class="btn btn-primary">save and send</button>
                   <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-primary" data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="h2v77o">
                     <span class="visually-hidden">Toggle Dropdown</span>
                   </button>
