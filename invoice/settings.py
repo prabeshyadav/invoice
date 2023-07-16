@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'management',
-    
+
+
     
     
 
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4' 
+
     
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -59,6 +62,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'invoice.urls'
+# WKHTMLTOPDF_PATH = '/path/to/wkhtmltopdf'
+# pdfkit_config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
+# PDFKIT_CONFIG = pdfkit_config
+
 
 TEMPLATES = [
     {
@@ -134,3 +141,19 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
+
+# settings.py
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# settings.py
+
+# Celery Beat Configuration
+CELERY_BEAT_SCHEDULE = {
+    'send-periodic-email': {
+        'task': 'your_app.tasks.send_periodic_email',
+        'schedule': 60 * 60,  # Run every hour
+    },
+}

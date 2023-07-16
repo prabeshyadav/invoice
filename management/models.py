@@ -1,5 +1,6 @@
 from django.db import models
 from invoice import commons
+from django.utils.crypto import get_random_string
 
 
 class AddCustomer(models.Model):
@@ -35,12 +36,41 @@ class AddCustomer(models.Model):
     
 class Invoice(models.Model):
     customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE)
-    invoice_number=models.IntegerField()
+    invoice_number=models.CharField(max_length=25,unique=True)
     
     order_number=models.IntegerField()
     invoice_date=models.DateField()
     due_date=models.DateField()
     subject=models.CharField(max_length=255)
+    
+    def __str__(self):
+        return f"Invoice of id {self.id}"
+    
+    def save(self,*args, **kwargs):
+        # generate random alphanumeric invoice number 
+        # this also handles if the random number is already existed in db
+        if not self.invoice_number:
+            invoice_number = get_random_string(length=6)
+            has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
+            count = 1
+            while has_invoice_id:
+                count += 1
+                invoice_number = invoice_number + str(count)
+                has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
+            self.invoice_number = invoice_number.upper()
+        super().save(*args, **kwargs)
+        
+    
+    @property
+    def total_amount(self):
+        items = TableItems.objects.filter(invoice=self)
+        
+        total =0
+        for item in items:
+            total = total+ item.amount
+            
+        return total
+            
     
     
 class Items(models.Model):
@@ -55,5 +85,10 @@ class TableItems(models.Model):
     items_details=models.CharField(max_length=225)
     quality=models.IntegerField()
     rate=models.IntegerField()
-    amount=models.IntegerField()
     invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE)
+    
+    
+    @property
+    def amount(self):
+        return self.quality * self.rate
+    
