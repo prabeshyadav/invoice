@@ -229,7 +229,7 @@
                       <i class="fa-regular fa-file-pdf"></i> PDF/Print
                     </button>
                     <ul class="dropdown-menu">
-                      <li><a class="dropdown-item" href="{% url 'pdf' %}">PDF</a></li>
+                      <li><a class="dropdown-item" href="{% url 'PfdMd' id=invoice_object.id %}">PDF</a></li>
 
                       <li><a class="dropdown-item" href="">Print</a></li>
                       <li><a class="dropdown-item" href="#">Print Delivery Note</a></li>
@@ -447,76 +447,34 @@
                           </tr>
                         </thead>
                         <tbody class="itembody">
-                          <tr class="breakrow-inside breakrow-after">
-                            <td rowspan="1" valign="top"
-                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                              class="pdf-item-row"> 1
-                            </td>
-                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                              <div>
-                                <div>
-                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                                    id="tmp_item_description">churot</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_qty">1.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_rate">10.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
-                              <span id="tmp_item_amount">10.00</span>
-                            </td>
-                          </tr>
-                          <tr class="breakrow-inside breakrow-after">
-                            <td rowspan="1" valign="top"
-                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                              class="pdf-item-row"> 1
-                            </td>
-                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                              <div>
-                                <div>
-                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                                    id="tmp_item_description">churot</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_qty">1.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_rate">10.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
-                              <span id="tmp_item_amount">10.00</span>
-                            </td>
-                          </tr>
-                          <tr class="breakrow-inside breakrow-after">
-                            <td rowspan="1" valign="top"
-                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                              class="pdf-item-row"> 1
-                            </td>
-                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                              <div>
-                                <div>
-                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                                    id="tmp_item_description">churot</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_qty">1.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
-                              <span id="tmp_item_rate">10.00</span>
-                            </td>
-                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
-                              <span id="tmp_item_amount">10.00</span>
-                            </td>
-                          </tr>
+                    
 
+                          {% for item in invoice_items %}
+                          <tr class="breakrow-inside breakrow-after">
+                            <td rowspan="1" valign="top"
+                              style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
+                              class="pdf-item-row"> 1
+                            </td>
+                            <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
+                              <div>
+                                <div>
+                                  <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
+                                    id="tmp_item_description">{{item.items_details}}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_qty">{{item.quality}}</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column text-right">
+                              <span id="tmp_item_rate">{{item.rate}}</span>
+                            </td>
+                            <td rowspan="1" class="pdf-item-row lineitem-column lineitem-content-right text-right">
+                              <span id="tmp_item_amount">{{item.amount}}</span>
+                            </td>
+                          </tr>
+                        
+                          {% endfor %}
 
                         </tbody>
                       </table>
@@ -526,15 +484,15 @@
                             <tbody>
                               <tr>
                                 <td class="total-section-label text-right">Sub Total</td>
-                                <td id="pdf_subtotal" class="total-section-value text-right">252.00</td>
+                                <td id="pdf_subtotal" class="total-section-value text-right">NPR {{invoice_object.total_amount}}</td>
                               </tr>
                               <tr>
                                 <td class="total-section-label text-right"><b>Total</b></td>
-                                <td id="pdf_total" class="total-section-value text-right"><b>NPR252.00</b></td>
+                                <td id="pdf_total" class="total-section-value text-right"><b>NPR {{invoice_object.total_amount}}</b></td>
                               </tr>
                               <tr style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
                                 <td class="total-section-label text-right"><b>Balance Due</b></td>
-                                <td id="pdf_balance_due" class="total-section-value text-right"><b>NPR252.00</b></td>
+                                <td id="pdf_balance_due" class="total-section-value text-right"><b> NPR {{invoice_object.total_amount}}</b></td>
                               </tr>
                             </tbody>
                           </table>
@@ -543,7 +501,7 @@
                       <div style="clear:both; padding-top:50px; width:100%;">
                         <label style="font-size: 10pt;" id="pdf_notes_label" class="pdf-label">Notes</label><br>
                         <p style="margin-top:7px; word-wrap: break-word;" class="pdf-notes">
-                          Thanks for your business. Tobaco causes cancer</p>
+                          {{invoice_object.subject}}</p>
                       </div>
                     </div>
                   </div>

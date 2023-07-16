@@ -9,7 +9,8 @@ from django.forms import ModelForm
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model=Invoice
-        fields='__all__'
+        # fields='__all__'
+        exclude=("invoice_number",)
         
 class CustomerModelForm(forms.ModelForm):
     class Meta:
