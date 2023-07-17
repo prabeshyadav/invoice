@@ -6,12 +6,12 @@ from django.contrib import messages
 from django.conf import settings
 
 from .models import *
-from weasyprint import HTML, CSS
+
 from django.template.loader import render_to_string
 import tempfile
 import datetime
 from io import BytesIO
-import pdfkit
+
 from django.template.loader import get_template
 from django.template.exceptions import TemplateDoesNotExist
 from xhtml2pdf.pisa import CreatePDF
@@ -148,7 +148,7 @@ def InvoiceView(request):
                 ]
             
             for item in result:
-                TableItems.objects.create(invoice=obj,amount=69,**item)
+                TableItems.objects.create(invoice=obj,**item)
                 
             messages.success(request, "Successfully Added Customer." )
             return redirect(reverse('invoicelist'))
