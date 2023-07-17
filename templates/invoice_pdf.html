@@ -87,18 +87,18 @@
                     </tr>
                     <tr>
                       <td style="padding: 5px 10px 2px 0px; font-size: 10pt; text-align: right;">
-                        <span class="pdf-label">Date :</span>
+                        <span class="pdf-label">invoice Date :</span>
                       </td>
                       <td class="text-right">
-                        <span>20 Jun 2023</span>
+                        <span>{{invoice_object.invoice_date}}</span>
                       </td>
                     </tr>
                     <tr>
                       <td style="padding: 5px 10px 2px 0px; font-size: 10pt; text-align: right;">
-                        <span class="pdf-label">Due Date :</span>
+                        <span class="pdf-label">due date :</span>
                       </td>
                       <td class="text-right">
-                        <span>20 Jun 2023</span>
+                        <span>{{invoice_object.due_date}}</span>
                       </td>
                     </tr>
                   </tbody>
@@ -109,6 +109,7 @@
           </tbody>
 
         </table>
+        {% for item in invoice_items %}{% endfor %}
         <table style="width: 100%; margin-top: 20px; table-layout: fixed;" class="itemtable">
           <thead>
             <tr style="height:32px; border-bottom: 1px solid #adadad; color: #444; font-weight: 500;">
@@ -134,84 +135,33 @@
 
             </tr>
           </thead>
+          {% for item in invoice_items %}
           <tbody class="itembody" style=" border-bottom: 1px solid #adadad;">
             <tr class="breakrow-inside breakrow-after">
               <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                class="pdf-item-row"> 1
+                class="pdf-item-row"> {{item.id}}
               </td>
               <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
                 <div>
                   <div>
                     <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                      id="tmp_item_description">churot</span>
+                      id="tmp_item_description">{{item.items_details}}</span>
                   </div>
                 </div>
               </td>
               <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
+                <span id="tmp_item_qty">{{item.quality}}</span>
               </td>
               <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
+                <span id="tmp_item_rate">{{item.rate}}</span>
               </td>
               <td rowspan="1" class=" lineitem-column lineitem-content-right"
                 style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
+                <span id="tmp_item_amount">{{item.amount}}</span>
               </td>
             </tr>
-            <tr class="breakrow-inside breakrow-after">
-              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                class="pdf-item-row"> 1
-              </td>
-              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                <div>
-                  <div>
-                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                      id="tmp_item_description">churot</span>
-                  </div>
-                </div>
-              </td>
-              <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column lineitem-content-right "
-                style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
-              </td>
-            </tr>
-            <tr class="breakrow-inside breakrow-after">
-              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;"
-                class="pdf-item-row"> 1
-              </td>
-              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                <div>
-                  <div>
-                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc"
-                      id="tmp_item_description">churot</span>
-                  </div>
-                </div>
-              </td>
-              <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column lineitem-content-right "
-                style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
-              </td>
-            </tr>
-
-
-          </tbody>
-        </table>
-        <div style="width: 100%; margin-top: 1px;">
-          <div style="width: 50%; float: left; vertical-align: top;">
-            <table style="font-size: 9pt; color: #000000; background-color: #ffffff; width: 100%; text-align: right;
-            ">
+            {% endfor %}
+           
               <tbody>
                 <tr>
                   <td style="width:60%; vertical-align: top; text-align: left; padding: 5px 10px 5px 0;">
@@ -249,7 +199,7 @@
                   <td style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Sub Total</td>
                   <td id="pdf_subtotal"
                     style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right;">NPR
-                    252.00</td>
+                    {{invoice_object.total_amount}}</td>
                 </tr>
                 <tr>
                   <td style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle; color:#FF3E3E;">
@@ -266,7 +216,7 @@
                 </tr>
                 <tr style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
                   <td style=" text-align: right;"><b>Balance Due</b></td>
-                  <td id="pdf_balance_due" class="total-section-value text-right"><b>NPR 252.00</b></td>
+                  <td id="pdf_balance_due" class="total-section-value text-right"><b>{{invoice_object.total_amount}}</b></td>
                 </tr>
               </tbody>
             </table>
@@ -281,7 +231,7 @@
                 </td>
                 <td style="padding: 5px 10px 5px 5px;width: 5%;text-align: right;   font-size: 16px; color: #121212;
                     " id="">
-                  Amount Due
+                    {{invoice_object.total_amount}}
                 </td>
   
               </tr>
@@ -291,7 +241,7 @@
                 <td rowspan="1" valign="top" style="padding: 10px 60px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> Please follow the details mentioned on your contract.
                 </td>
                 <td rowspan="1" class=" lineitem-column lineitem-content-right" style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 24px;">
-                  <span id="item_amount">NPR 252.00</span>
+                  <span id="item_amount">{{invoice_object.total_amount}}</span>
                 </td>
               </tr>  
             </tbody>
