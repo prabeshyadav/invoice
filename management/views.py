@@ -475,14 +475,9 @@ def pdf(request,id):
 
 
 
-def download_activity_ticket(request, guid):
+def download_invoice_pdf(request, guid):
     # ticket = get_object_or_404(ActivityBookingTicket, guid=guid)
 
-    data = {
-        "booking": "sdfsdf",
-        "domain": request.META["HTTP_HOST"],
-        "ticket": "sdf",
-        "guid": guid,
-    }
-    pdf = render_to_pdf("activity_ticket.html", data)
+  
+    pdf = render_to_pdf("invoice_pdf.html")
     return HttpResponse(pdf, content_type="application/pdf")
