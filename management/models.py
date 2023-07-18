@@ -62,15 +62,25 @@ class Invoice(models.Model):
         
     
     @property
-    def total_amount(self):
+    def sub_total(self):
         items = TableItems.objects.filter(invoice=self)
         
         total =0
         for item in items:
             total = total+ item.amount
+
             
         return total
-            
+    @property
+    def discounted_total_amount(self):
+        discount_percent = 10  # Assuming a discount of 10%, you can replace this with the actual discount value
+        discount = (discount_percent / 100) * self.sub_total
+        return self.sub_total - discount
+
+    @property
+    def discount_amount(self):
+        d_amount=self.sub_total-self.discounted_total_amount
+        return d_amount
     
     
 class Items(models.Model):
