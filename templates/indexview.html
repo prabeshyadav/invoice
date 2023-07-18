@@ -484,15 +484,15 @@
                             <tbody>
                               <tr>
                                 <td class="total-section-label text-right">Sub Total</td>
-                                <td id="pdf_subtotal" class="total-section-value text-right">NPR {{invoice_object.total_amount}}</td>
+                                <td id="pdf_subtotal" class="total-section-value text-right">NPR {{invoice_object.sub_total}}</td>
                               </tr>
                               <tr>
                                 <td class="total-section-label text-right"><b>Total</b></td>
-                                <td id="pdf_total" class="total-section-value text-right"><b>NPR {{invoice_object.total_amount}}</b></td>
+                                <td id="pdf_total" class="total-section-value text-right"><b>NPR {{invoice_object.discounted_total_amount}}</b></td>
                               </tr>
                               <tr style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
                                 <td class="total-section-label text-right"><b>Balance Due</b></td>
-                                <td id="pdf_balance_due" class="total-section-value text-right"><b> NPR {{invoice_object.total_amount}}</b></td>
+                                <td id="pdf_balance_due" class="total-section-value text-right"><b> NPR {{invoice_object.discounted_total_amount}}</b></td>
                               </tr>
                             </tbody>
                           </table>
