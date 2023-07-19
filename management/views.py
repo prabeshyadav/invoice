@@ -172,7 +172,9 @@ def InvoiceView(request):
 
 # def index(request):
 #     return render(request,'index.html')
-
+# def CustomerViewPage(request):
+#      context={}
+#      return render(request,'customerview.html',context)
 
 def tableView(request):
     user=AddCustomer.objects.all()

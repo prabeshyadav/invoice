@@ -14,6 +14,7 @@ urlpatterns = [
     path('items/',views.ItemView,name='items'),
     path('table',views.tableView,name='table'),
     path('invoicelist',views.InvoiceListView,name='invoicelist'),
+    #path('customerview',views.CustomerViewPage,name='customerview'),
     #path('',views.AddCustomer.as_view(),name='index')
     path('home/',views.home,name='home'),
     path('invoice-detail/<int:id>/',views.IndexView,name='indexview'),
