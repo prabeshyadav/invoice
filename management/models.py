@@ -42,7 +42,12 @@ class Invoice(models.Model):
     invoice_date=models.DateField()
     due_date=models.DateField()
     subject=models.CharField(max_length=255)
-    
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('paid', 'Paid'),
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     def __str__(self):
         return f"Invoice of id {self.id}"
     
