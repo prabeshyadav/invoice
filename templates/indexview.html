@@ -24,9 +24,9 @@
               </div>
               <div class=" btn-toolbar  ">
                 <div class="btn-group mr-1" style="height:35px">
-                  <button id="addLineButton" type="button" class="btn btn-primary">New</button>
+                  <a href="{% url 'invoice' %}"> <button id="addLineButton" type="button" class="btn btn-primary">New</button>
                   <button type="button" class="btn dropdown-toggle dropdown-toggle-split btn-primary"
-                    data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh">
+                    data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh"> 
                     <span class="visually-hidden">Toggle Dropdown</span>
                   </button>
                   <ul class="dropdown-menu">
@@ -35,6 +35,7 @@
                     <li><a class="dropdown-item" href="#">New Recurring invoice</a></li>
                     <li><a class="dropdown-item" href="#">New Credit Note</a></li>
                   </ul>
+                </a> 
                 </div>
                 <div class="dropdown btn-group list-sorter" style="height:35px">
                   <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#" role="button"
@@ -582,7 +583,7 @@
                   <h4 style="font-weight: 400; margin: 35px 0;">More Information</h4>
                   <div class="row info-row">
                   <label class="text-muted col-lg-3">Selected Emails </label>
-                   <div class="col-lg-9">sanya@dfdsfd.com</div>
+                   <div class="col-lg-9">{{invoice_object.customer_name.email}}</div>
                   </div>
                   </div>
               </div>
