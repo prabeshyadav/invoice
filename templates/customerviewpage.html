@@ -1,0 +1,583 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block container %}
+                <!-- form content -->
+                <div class="invoiceview-body row">
+                    <div class="invoice-left invoice-column col-lg-4 pl-3 pr-0">
+                        <div class="list-box">
+                            <div class="btn-toolbar ">
+                                <button type="button"
+                                    class="item-btn btn  dropdown-toggle dropdown-toggle-split border-0"
+                                    style="outline: none;" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>Invoices
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">All</a></li>
+                                    <li><a class="dropdown-item" href="#">Draft</a></li>
+                                    <li><a class="dropdown-item" href="#">Customer Viewed</a></li>
+                                    <li><a class="dropdown-item" href="#">Partially Paid</a></li>
+                                    <li><a class="dropdown-item" href="#">Unpaid</a></li>
+                                    <li><a class="dropdown-item" href="#"> Overdue</a></li>
+                                    <li><a class="dropdown-item" href="#">Payment Initiated</a></li>
+                                    <li><a class="dropdown-item" href="#">Paid</a></li>
+                                    <li><a class="dropdown-item" href="#">Void</a></li>
+                                </ul>
+                            </div>
+                            <div class=" btn-toolbar  ">
+                                <div class="btn-group mr-1" style="height:35px">
+                                    <button id="addLineButton" type="button" class="btn btn-primary">New</button>
+                                    <button type="button" class="btn dropdown-toggle dropdown-toggle-split btn-primary"
+                                        data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">New Invoice</a></li>
+                                        <div class="dropdown-divider"></div>
+                                        <li><a class="dropdown-item" href="#">New Recurring invoice</a></li>
+                                        <li><a class="dropdown-item" href="#">New Credit Note</a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown btn-group list-sorter" style="height:35px">
+                                    <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#"
+                                        role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-ellipsis"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Created Time</a></li>
+                                        <li><a class="dropdown-item" href="#">Last Modified</a></li>
+                                        <li><a class="dropdown-item" href="#">Date</a></li>
+                                        <li><a class="dropdown-item" href="#">Invoice#</a></li>
+                                        <li><a class="dropdown-item" href="#">Order Number</a></li>
+                                        <li><a class="dropdown-item" href="#">Due Date</a></li>
+                                        <li><a class="dropdown-item" href="#">Amount</a></li>
+                                        <li><a class="dropdown-item" href="#">Balance Due</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#">Import Invoices</a></li>
+                                        <li><a class="dropdown-item" href="#">Export Invoices</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#">Export Current View</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#">Preferences</a></li>
+                                        <li><a class="dropdown-item" href="#">Manage Custom Fields</a></li>
+                                        <li><a class="dropdown-item" href="#">Online Payments</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#">Refresh List</a></li>
+
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive overflow-initial">
+                            <table class="table zi-table">
+                                <tbody>
+                                    <tr class="table-active">
+                                        <td class="selection-cell">
+                                            <input class="checkbox  cursor-pointer align-middle" type="checkbox"
+                                                aria-checked="false">
+                                        </td>
+                                        <td>
+                                            <div class="list-primary">
+                                                <div class="name text-primary" title="Kantipur Infotech">Kantipur
+                                                    Infotech</div>
+                                            </div>
+                                            <div class="list-seconday">
+                                                <span class="text-muted">NPR 252.00</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="invoice-right invoice-column col-lg-8 p-0">
+                        <div class="fill header d-flex justify-content-between px-4">
+                            <div class="align-self-center">
+                                <div class="d-inline-block">
+                                    <span class="page-header-title">Kantipur Infotech</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="d-inline-block">
+                                    <span class="position-relative">
+                                        <span class="linked-text">
+                                            <i class="fa-solid fa-paperclip"></i>
+                                            <span class="pr-2">Attachments</span>
+                                        </span>
+                                    </span>
+                                    <span class="separationline px-3">
+                                        <i class="fa-regular fa-message"></i>
+                                        <span>Commment & History</span>
+                                    </span>
+                                    <span
+                                        class="close-entity close-details close-details-right pt-1 separationline"><svg
+                                            version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0"
+                                            viewBox="0 0 512 512" xml:space="preserve" class="icon icon-xs"
+                                            style="height: 14px;">
+                                            <path
+                                                d="M455.2 9.2L256 208.4 56.8 9.2C44.5-3.1 24.6-3.1 12.2 9.2l-2.9 2.9C-3 24.4-3 44.4 9.3 56.7L208.4 256 9.2 455.2c-12.3 12.3-12.3 32.3 0 44.6l2.9 2.9c12.3 12.3 32.3 12.3 44.6 0L256 303.6l199.2 199.2c12.3 12.3 32.3 12.3 44.6 0l2.9-2.9c12.3-12.3 12.3-32.3 0-44.6L303.6 256 502.8 56.8c12.3-12.3 12.3-32.3 0-44.6l-2.9-2.9c-12.5-12.4-32.4-12.4-44.7-.1z">
+                                            </path>
+                                        </svg></span>
+                                </div>
+                            </div>
+                        </div>
+                        <nav>
+                            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                <button class="nav-link active" id="nav-overview-tab" data-bs-toggle="tab"
+                                    data-bs-target="#nav-overview" type="button" role="tab" aria-controls="nav-overview"
+                                    aria-selected="true">Overview</button>
+                                <button class="nav-link" id="nav-comment-tab" data-bs-toggle="tab"
+                                    data-bs-target="#nav-comment" type="button" role="tab" aria-controls="nav-comment"
+                                    aria-selected="false">Comments</button>
+                                <button class="nav-link" id="nav-transaction-tab" data-bs-toggle="tab"
+                                    data-bs-target="#nav-transaction" type="button" role="tab"
+                                    aria-controls="nav-transaction" aria-selected="false">Mails</button>
+                                <button class="nav-link" id="nav-mail-tab" data-bs-toggle="tab"
+                                    data-bs-target="#nav-mail" type="button" role="tab" aria-controls="nav-mail"
+                                    aria-selected="false">Transactions</button>
+                            </div>
+                        </nav>
+                        <div class="tab-content" id="nav-tabContent">
+                            <div class="tab-pane fade show active" id="nav-overview" role="tabpanel"
+                                aria-labelledby="nav-overview-tab" tabindex="0">
+                                <!-- firstpage details -->
+                                <div class="details" id="contact-details">
+                                    <div class="details-info">
+                                        <div class="group mb-1 pt-3">
+                                            <div>Kantipur Infotech</div>
+                                            <hr>
+                                            <div class="person row">
+                                                <div class="col-lg-2">
+                                                    <img src="icon.png">
+                                                </div>
+                                                <div class="col-lg-10">
+                                                    <strong>Ms. Sanya Parajuli</strong>
+                                                    <br>
+                                                    <span>sanyaparajuli123@gmail.com</span>
+                                                    <br>
+                                                    <span><i class="fa-solid fa-phone"></i> 66666666666</span>
+                                                    <br>
+                                                    <span><i class="fa-solid fa-mobile-screen-button"></i>
+                                                        383724817418</span>
+                                                    <br>
+                                                    <div class="line-seperator">
+                                                        <small class="coll">
+                                                            <a href="#">Edit</a>
+                                                        </small>
+                                                        <small class="coll">
+                                                            <a href="#">Send Email</a>
+                                                        </small>
+                                                        <small class="coll">
+                                                            <a href="#">Invite to Portal</a>
+                                                        </small>
+                                                        <small class="coll">
+                                                            <a href="#">Delete</a>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion accordion-flush" id="accordionFlushExample"
+                                            style="background-color: #fbfbfb;">
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="flush-headingOne">
+                                                    <button class="accordion-button collapsed px-0" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#flush-collapseOne"
+                                                        aria-expanded="false" aria-controls="flush-collapseOne">
+                                                        ADDRESS
+                                                    </button>
+                                                </h2>
+                                                <div id="flush-collapseOne" class="accordion-collapse collapse"
+                                                    aria-labelledby="flush-headingOne"
+                                                    data-bs-parent="#accordionFlushExample">
+                                                    <div class="accordion-body">
+                                                        <div>Billing Address</div>
+                                                        <div><span style="color:#6c7184">No Billing Address</Address>
+                                                                </span> - <a tabindex="0" class="btn btn-lg btn-danger"
+                                                                role="button" data-bs-toggle="popover"
+                                                                data-bs-trigger="focus"
+                                                                data-bs-title="Dismissible popover"
+                                                                data-bs-content="And here's some amazing content. It's very engaging. Right?">Dismissible
+                                                                popover</a>
+
+                                                        </div>
+                                                        <br>
+                                                        <div>Shipping Address</div>
+                                                        <div><span style="color:#6c7184">No Shipping Address</Address>
+                                                                </span> - <a href="#">Add new address</a></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="flush-headingTwo">
+                                                    <button class="accordion-button collapsed px-0" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo"
+                                                        aria-expanded="false" aria-controls="flush-collapseTwo">
+                                                        OTHER DETAILS
+                                                    </button>
+                                                </h2>
+                                                <div id="flush-collapseTwo" class="accordion-collapse collapse"
+                                                    aria-labelledby="flush-headingTwo"
+                                                    data-bs-parent="#accordionFlushExample">
+                                                    <div class="accordion-body">
+                                                        <div class="group">
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Customer Type</div>
+                                                                <div class="col-lg-6">Business</div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Default Currency</div>
+                                                                <div class="col-lg-6">NPR</div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Payment Terms</div>
+                                                                <div class="col-lg-6">Due on Receipt</div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Portal Status</div>
+                                                                <div class="col-lg-6">
+                                                                    <div class="text-success enabled">Enabled</div>
+                                                                    <span
+                                                                        class="d-inline-block font-xs text-muted mb-2">
+                                                                        (1 of 1 Contacts) </span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Portal Language</div>
+                                                                <div class="col-lg-6">English</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="flush-headingThree">
+                                                    <button class="accordion-button collapsed px-0" type="button"
+                                                        data-bs-toggle="collapse" data-bs-target="#flush-collapseThree"
+                                                        aria-expanded="false" aria-controls="flush-collapseThree">
+                                                        CONTACT PERSONS
+                                                    </button>
+                                                </h2>
+                                                <div id="flush-collapseThree" class="accordion-collapse collapse"
+                                                    aria-labelledby="flush-headingThree"
+                                                    data-bs-parent="#accordionFlushExample">
+                                                    <div class="accordion-body">
+                                                        <div class="text-muted text-center pt-4">
+                                                            <p>No contact persons found.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="flush-headingTwo">
+                                                    <button class="accordion-button collapsed px-0 text-uppercase"
+                                                        type="button" data-bs-toggle="collapse"
+                                                        data-bs-target="#flush-collapseFourth" aria-expanded="false"
+                                                        aria-controls="flush-collapseFourth">
+                                                        record info
+                                                    </button>
+                                                </h2>
+                                                <div id="flush-collapseFourth" class="accordion-collapse collapse"
+                                                    aria-labelledby="flush-headingFourth"
+                                                    data-bs-parent="#accordionFlushExample">
+                                                    <div class="accordion-body">
+                                                        <div class="group">
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Customer ID</div>
+                                                                <div class="col-lg-6">4151783000000083001</div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Created on</div>
+                                                                <div class="col-lg-6">20 Jun 2023</div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-lg-6 text-muted">Created By</div>
+                                                                <div class="col-lg-6">Sanya Parajuli</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="entity-details prim-info">
+                                        <div class="text-muted">Payment due period</div>
+                                        <div>Due on Receipt</div>
+                                        <p class="mt-4 h5 mr-1">Receivables</p>
+                                        <table class="balance-summary mt-3 table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase">Currency</th>
+                                                    <th class="text-uppercase">Outstanding Receivables</th>
+                                                    <th class="text-uppercase">Unused Credits</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>NPR- Nepalese Rupee</td>
+                                                    <td class="cursor-pointer" style="color: #408dfb">NPR252.00</td>
+                                                    <td>NPR0.00</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                      
+                                      
+                                        <hr class="my-2">
+                                        <div class="container">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="card" style="border: none;">
+                                                        <div class="card-body">
+                                                            <h6 class="card-title">Timeline</h6>
+                                                            <div id="content">
+                                                                <ul class="timeline">
+                                                                    <li class="event" data-date="12:30 - 1:00pm">
+                                                                        <p style="font-weight: 400;"> Invoice added</p>
+                                                                        <div class="text-muted">Invoice INV-000002 of
+                                                                            amount NPR980.00 created <strong>by Sanya
+                                                                                Parajuli</strong> - <a
+                                                                                class=" cursor-pointer"
+                                                                                href="#"><small>View Details</small></a>
+                                                                        </div>
+                                                                    </li>
+                                                                    <li class="event" data-date="2:30 - 4:00pm">
+                                                                        <p style="font-weight: 400;"> Invoice updated
+                                                                        </p>
+                                                                        <div class="text-muted">Invoice INV-000001
+                                                                            emailed <strong>by Sanya Parajuli</strong>
+                                                                            <!----> - <a class="cursor-pointer"
+                                                                                href=""><small>View Details</small></a>
+                                                                        </div>
+                                                                    </li>
+                                                                    <li class="event" data-date="5:00 - 8:00pm">
+                                                                        <p style="font-weight: 400;"> Invoice added</p>
+                                                                        <div class="text-muted">Invoice INV-000001 of
+                                                                            amount NPR252.00 created <strong>by Sanya
+                                                                                Parajuli</strong> <!----> - <a
+                                                                                class=" cursor-pointer"><small>View
+                                                                                    Details</small></a></div>
+                                                                    </li>
+                                                                    <li class="event" data-date="8:30 - 9:30pm">
+                                                                        <p style="font-weight: 400;">Contact added</p>
+                                                                        <div class="text-muted">Contact created
+                                                                            <strong>by Sanya Parajuli</strong> <!---->
+                                                                            <!----></div>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-comment" role="tabpanel"
+                                aria-labelledby="nav-comment-tab" tabindex="0">
+                                <div class="p-5" style="width: 70%;">
+                                    <div class="add-comment-text-area rounded form-group ">
+                                        <textarea rows="5" autofocus=""
+                                            class="text-area form-control border-0 shadow-none "></textarea>
+                                        <div class="add-comment-btn-container d-flex justify-content-between p-3">
+                                            <button disabled="" class="btn btn-primary comment-btn" type="submit"> Add
+                                                Comment</button>
+                                        </div>
+                                    </div>
+                                    <div class="font-xs mt-6 text-light-grey text-semibold text-uppercase">Previous
+                                        Comments</div>
+                                    <hr class="mt-3 mb-0">
+                                    <div class="comments-history contextual-sidebar-comments px-0 pt-3 ">
+                                        <ul class="list-unstyled">
+                                            <div class="pt-4 text-center text-muted">No comments found.</div>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-transaction" role="tabpanel"
+                                aria-labelledby="nav-transaction-tab" tabindex="0">
+                                <div class="card rounded-md email-history m-2">
+                                    <div class="card-header border-bottom-0 d-flex justify-content-between">
+                                        <div id="ember2559" class="dropdown ember-view">
+                                            <p class="font-medium mb-0 text-medium">System Mails</p>
+                                            <div class="dropdown-menu  "><span class="dropdown-item cursor-pointer"
+                                                    data-ember-action="" data-ember-action-2560="2560">System
+                                                    Mails</span></div>
+                                        </div> 
+
+                                    </div>
+                                    <table class="table ">
+                                        <tbody>
+                                            <tr>
+                                                <td width="75%" class="px-5 py-3 text-nowrap"> <span
+                                                        class="align-items-center d-inline-flex text-medium justify-content-center mr-0 bg-initials-default rounded-circle w-30px h-30px">S</span>
+                                                    <div class="ml-4 align-middle text-wrap d-inline-block w-90"><span
+                                                            class="text-black">To</span>
+                                                        <strong class="text-medium text-black">sanya@dfdsfd.com</strong>
+                                                        <div><span class="text-black">Invoice Notification</span> -
+                                                            <span class="text-dark-shade-blue">Invoice - INV-000001 from
+                                                                Sanya</span></div>
+                                                    </div>
+                                                </td>
+                                                <td width="25%" class="text-right  px-5 py-3">20 Jun 2023 12:08 AM</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            </div>
+
+                            <div class="tab-pane fade" id="nav-mail" role="tabpanel" aria-labelledby="nav-mail-tab"
+                                tabindex="0">
+                                <div class="mt-1 p-2">
+                                <p class="mb-0">
+                                    <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample1"
+                                        role="button" aria-expanded="false" aria-controls="multiCollapseExample1" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Invoice</a>
+                                </p>
+                                        <div class="collapse multi-collapse" id="multiCollapseExample1">
+                                            <div class="card card-body p-0">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                      <tr>
+                                                        <th scope="col">Date</th>
+                                                        <th scope="col">Invoice</th>
+                                                        <th scope="col">Order No</th>
+                                                        <th scope="col">Amount</th>
+                                                        <th scope="col">Balance Due</th>
+                                                        <th scope="col">Status</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      <tr>
+                                                        <td>1st June</td>
+                                                        <td style="color: #408dfb;">Mark</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                      </tr>
+                                                      <tr>
+                                                        <td>1st August</td>
+                                                        <td style="color: #408dfb;">Mark</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                      </tr>
+                                                      <tr>
+                                                        <td>1st January</td>
+                                                        <td style="color: #408dfb;">Mark</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                        <td>Otto</td>
+                                                        <td>@mdo</td>
+                                                      </tr>
+                                                    </tbody>
+                                                  </table>
+                                            </div>
+                                        </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample2"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample2" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Customer Payment</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample2">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">No payments have been received or recorded yet. <a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample3"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample3" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Quotes</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample3">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">There are no quotes<a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample4"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample4" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Expenses</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample4">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">There are no expenses<a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample5"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample5" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Recurring Expenses</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample5">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">There are no recurring expenses<a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample6"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample6" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Projects</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample6">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">There are no projects<a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                                <div class="mt-1 p-2">
+                                    <p class="mb-0">
+                                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#multiCollapseExample7"
+                                            role="button" aria-expanded="false" aria-controls="multiCollapseExample7" id="transaction-drop"><i class="fa-solid fa-chevron-down pr-1" style="color: #408dfb;"></i>Sales Receipt</a>
+                                    </p>
+                                            <div class="collapse multi-collapse" id="multiCollapseExample7">
+                                                <div class="card card-body p-0">
+                                                    <div class="text-center text-muted p-5">There are no sales receipts<a  class=" btn btn-link " href="#" style="font-size: 10px;
+                                                        text-decoration: none;"> - Add New</a></div>
+                                                </div>
+                                            </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <script src='main.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+    <script>
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+        const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+    </script>
+
+    {% endblock %}
