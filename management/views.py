@@ -124,6 +124,7 @@ def Customer(request):
 
 def InvoiceView(request):
     if request.method=='POST':
+        
         print(request.POST)
         fm=InvoiceForm(request.POST)
         if fm.is_valid():
@@ -146,6 +147,7 @@ def InvoiceView(request):
                     }
                     for i in range(len(items_details))
                 ]
+            
             
             for item in result:
                 TableItems.objects.create(invoice=obj,**item)

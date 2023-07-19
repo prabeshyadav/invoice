@@ -24,9 +24,9 @@
               </div>
               <div class=" btn-toolbar  ">
                 <div class="btn-group mr-1" style="height:35px">
-                  <button id="addLineButton" type="button" class="btn btn-primary">New</button>
+                  <a href="{% url 'invoice' %}"> <button id="addLineButton" type="button" class="btn btn-primary">New</button>
                   <button type="button" class="btn dropdown-toggle dropdown-toggle-split btn-primary"
-                    data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh">
+                    data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh"> 
                     <span class="visually-hidden">Toggle Dropdown</span>
                   </button>
                   <ul class="dropdown-menu">
@@ -35,6 +35,7 @@
                     <li><a class="dropdown-item" href="#">New Recurring invoice</a></li>
                     <li><a class="dropdown-item" href="#">New Credit Note</a></li>
                   </ul>
+                </a> 
                 </div>
                 <div class="dropdown btn-group list-sorter" style="height:35px">
                   <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#" role="button"
@@ -352,7 +353,7 @@
           <tbody>
             <tr>
               <td style="vertical-align: top; width: 50%;">
-                <img src="images/logo.png" style="width: 210px;">
+                <img src="{% static 'images/logo.png' %}" style="width: 210px;">
               </td>
               <td style="width:50%; text-align: right; vertical-align: top;">
                 <span style="font-size: 28pt;
@@ -370,15 +371,15 @@
                   <span>
                     <strong>
                       <span class="pdf-customer-name">
-                        <a href="#" style="color: #000;font-size: 18px;font-weight: 590;line-height: 30px;">Kantipur
-                          Infotech</a>
+                        <a href="#" style="color: #000;font-size: 18px;font-weight: 590;line-height: 30px;">{{invoice_object.customer_name.company_name}}
+                          </a>
                       </span>
                     </strong>
                   </span>
                   <div class="pdf-website" style="color: #646464;font-size: 10px;font-weight: 400;">
-                    <span>Website: </span><span style="padding-left: 1px;">flavourbakery.com</span>
+                    <span>Website: </span><span style="padding-left: 1px;">{{invoice_object.customer_name.website}}</span>
                     <br>
-                    <span>Email: </span><span style="padding-left: 1px;">flavourbakery.com</span>
+                    <span>Email: </span><span style="padding-left: 1px;">{{invoice_object.customer_name.email}}</span>
                   </div>
                 </div>
               </td>
@@ -390,7 +391,7 @@
                         <span class="pcs-label">Invoice:</span>
                       </td>
                       <td class="text-right">
-                        <span id="pdf-entity-date">INV-000001</span>
+                        <span id="pdf-entity-date">{{invoice_object.invoice_number}}</span>
                       </td>
                     </tr>
                     <tr>
@@ -398,7 +399,7 @@
                         <span class="pdf-label">Date :</span>
                       </td>
                       <td class="text-right">
-                        <span>20 Jun 2023</span>
+                        <span>{{invoice_object.invoice_date}}</span>
                       </td>
                     </tr>
                     <tr>
@@ -406,7 +407,7 @@
                         <span class="pdf-label">Due Date :</span>
                       </td>
                       <td class="text-right">
-                        <span>20 Jun 2023</span>
+                        <span>{{invoice_object.due_date}}</span>
                       </td>
                     </tr>
                   </tbody>
@@ -443,66 +444,31 @@
             </tr>
           </thead>
           <tbody class="itembody" style=" border-bottom: 1px solid #adadad;">
+
+            {% for item in  invoice_items %}
+
             <tr class="breakrow-inside breakrow-after">
-              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;" class="pdf-item-row"> 1
+              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;" class="pdf-item-row"> {{item.id}}
               </td>
               <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
                 <div>
                   <div>
-                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc" id="tmp_item_description">churot</span>
+                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc" id="tmp_item_description">{{item.items_details}}</span>
                   </div>
                 </div>
               </td>
               <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
+                <span id="tmp_item_qty">{{item.quality}}</span>
               </td>
               <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
+                <span id="tmp_item_rate">{{item.rate}}</span>
               </td>
               <td rowspan="1" class=" lineitem-column lineitem-content-right" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
+                <span id="tmp_item_amount">{{item.amount}}</span>
               </td>
             </tr>
-            <tr class="breakrow-inside breakrow-after">
-              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;" class="pdf-item-row"> 1
-              </td>
-              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                <div>
-                  <div>
-                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc" id="tmp_item_description">churot</span>
-                  </div>
-                </div>
-              </td>
-              <td rowspan="1" class=" lineitem-column " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column lineitem-content-right " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
-              </td>
-            </tr>
-            <tr class="breakrow-inside breakrow-after">
-              <td rowspan="1" valign="top" style="padding: 10px 0 10px 5px;text-align: center;word-wrap: break-word;" class="pdf-item-row"> 1
-              </td>
-              <td rowspan="1" valign="top" style="padding: 10px 0px 10px 20px;" class="pdf-item-row">
-                <div>
-                  <div>
-                    <span style="white-space: pre-wrap;word-wrap: break-word;" class="pdf-item-desc" id="tmp_item_description">churot</span>
-                  </div>
-                </div>
-              </td>
-              <td rowspan="1" class=" lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_qty">1.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column" style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_rate">10.00</span>
-              </td>
-              <td rowspan="1" class="lineitem-column lineitem-content-right " style="text-align: right; padding-right: 10px;">
-                <span id="tmp_item_amount">10.00</span>
-              </td>
-            </tr>
+            {% endfor %}
+            
 
 
           </tbody>
@@ -531,7 +497,7 @@
                <br>
                <span>Name</span><span style="padding-left: 33px;">
                  Kantipur Infotech</span><br>
-               <img src="images/Esewa 1.png" style="height: 76px; width: 75px;">
+               <img src="{% static 'images/qr.png' %}" style="height: 76px; width: 75px;">
              </div>
                </div>
              </td>
@@ -540,24 +506,24 @@
                 <div>
                   <span style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Sub Total</span>
                   <span id="pdf_subtotal" style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right;">NPR
-                    252.00</span>
+                    {{invoice_object.sub_total}}</span>
                 </div>
                 <div>
                   <span style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle; color:#FF3E3E;">
                     Discount(10%)</span>
                   <span id="pdf_discount" style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right; color: #FF3E3E;">
-                    NPR 252.00</span>
+                    NPR {{invoice_object.discount_amount}}</span>
                 </div>
                 <div>
-                  <span style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Tax: Vat(13%)</span>
+                  <span style=" text-align: right; padding: 5px 10px 5px 0; vertical-align: middle;">Tax: Vat(0%)</span>
                   <span id="pdf_tax" style=" width: 120px; vertical-align: middle; padding: 10px 10px 10px 5px; text-align: right;">NPR
-                    252.00</span>
+                    00</span>
                 </div>
                 <div style="height:40px; background-color: #f7f7f7; width: 100%;" class="pcs-balance">
                   <span style=" text-align: right;"><b>Balance Due</b></span>
                   <span id="pdf_balance_due" style="  width: 120px;
                   vertical-align: middle;
-                  padding: 10px 10px 10px 5px;"><b>NPR 252.00</b></span>
+                  padding: 10px 10px 10px 5px;"><b>NPR {{invoice_object.discounted_total_amount}}</b></span>
                 </div></td>
               
             
@@ -582,7 +548,7 @@
                 <td rowspan="1" valign="top" style="padding: 10px 60px 10px 5px;text-align: left;word-wrap: break-word; color:#646464;" class="pdf-item-row"> Please follow the details mentioned on your contract.
                 </td>
                 <td rowspan="1" class=" lineitem-column lineitem-content-right" style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 24px;">
-                  <span id="item_amount">NPR 252.00</span>
+                  <span id="item_amount">NPR {{invoice_object.discounted_total_amount}}</span>
                 </td>
               </tr>  
             </tbody>
@@ -617,7 +583,7 @@
                   <h4 style="font-weight: 400; margin: 35px 0;">More Information</h4>
                   <div class="row info-row">
                   <label class="text-muted col-lg-3">Selected Emails </label>
-                   <div class="col-lg-9">sanya@dfdsfd.com</div>
+                   <div class="col-lg-9">{{invoice_object.customer_name.email}}</div>
                   </div>
                   </div>
               </div>
