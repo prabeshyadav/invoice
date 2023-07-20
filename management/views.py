@@ -174,9 +174,27 @@ def InvoiceView(request):
 
 # def index(request):
 #     return render(request,'index.html')
-def CustomerViewPage(request):
-     context={}
-     return render(request,'customerviewpage.html',context)
+def CustomerViewPage(request, id):
+    from django.db.models import Sum,F
+    obj=get_object_or_404(AddCustomer, id=id)
+    obj1 = obj.invoices.all()
+    
+    ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quality')))['total_amount']
+    # return HttpResponse(ammount_pay_obj)
+    
+    total_sum = ammount_pay_obj
+
+    
+    context={'obj1': obj1, 'obj': obj,'total_sum':total_sum}
+    return render(request,'customerviewpage.html',context)
+
+def DeleteCustomer(request, id):
+    
+    obj = get_object_or_404(AddCustomer, id=id)
+    obj.delete()
+    return redirect('table')
+
+
 
 def tableView(request):
     user=AddCustomer.objects.all()
