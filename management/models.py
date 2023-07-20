@@ -35,7 +35,7 @@ class AddCustomer(models.Model):
         return self.fullname()
     
 class Invoice(models.Model):
-    customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE)
+    customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE, related_name="invoices")
     invoice_number=models.CharField(max_length=25,unique=True)
     
     order_number=models.IntegerField()
@@ -47,7 +47,7 @@ class Invoice(models.Model):
         ('sent', 'Sent'),
         ('paid', 'Paid'),
     )
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', blank=True, null=True)
     def __str__(self):
         return f"Invoice of id {self.id}"
     

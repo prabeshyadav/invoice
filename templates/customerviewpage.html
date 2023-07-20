@@ -25,7 +25,7 @@
                             </div>
                             <div class=" btn-toolbar  ">
                                 <div class="btn-group mr-1" style="height:35px">
-                                    <button id="addLineButton" type="button" class="btn btn-primary">New</button>
+                                    <a href="{% url 'index' %}"><button id="addLineButton" type="button" class="btn btn-primary">New</button>
                                     <button type="button" class="btn dropdown-toggle dropdown-toggle-split btn-primary"
                                         data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="16pbsh">
                                         <span class="visually-hidden">Toggle Dropdown</span>
@@ -36,6 +36,7 @@
                                         <li><a class="dropdown-item" href="#">New Recurring invoice</a></li>
                                         <li><a class="dropdown-item" href="#">New Credit Note</a></li>
                                     </ul>
+                                </a> 
                                 </div>
                                 <div class="dropdown btn-group list-sorter" style="height:35px">
                                     <a class="btn btn-secondary dropdown-toggle dropdown-toggle-no-caret" href="#"
@@ -88,9 +89,11 @@
                                                 <div class="name text-primary" title="Kantipur Infotech">Kantipur
                                                     Infotech</div>
                                             </div>
+                                            
                                             <div class="list-seconday">
-                                                <span class="text-muted">NPR 252.00</span>
+                                                <span class="text-muted">{{total_sum}}</span>
                                             </div>
+                                            
                                         </td>
                                     </tr>
                                 </tbody>
@@ -158,14 +161,14 @@
                                                     <img src="icon.png">
                                                 </div>
                                                 <div class="col-lg-10">
-                                                    <strong>Ms. Sanya Parajuli</strong>
+                                                    <strong>{{obj.fullname}}</strong>
                                                     <br>
-                                                    <span>sanyaparajuli123@gmail.com</span>
+                                                    <span>{{obj.email}}</span>
                                                     <br>
-                                                    <span><i class="fa-solid fa-phone"></i> 66666666666</span>
+                                                    <span><i class="fa-solid fa-phone"></i>{{obj.phone}}</span>
                                                     <br>
                                                     <span><i class="fa-solid fa-mobile-screen-button"></i>
-                                                        383724817418</span>
+                                                        {{obj.mobile}}</span>
                                                     <br>
                                                     <div class="line-seperator">
                                                         <small class="coll">
@@ -178,7 +181,7 @@
                                                             <a href="#">Invite to Portal</a>
                                                         </small>
                                                         <small class="coll">
-                                                            <a href="#">Delete</a>
+                                                            <a href="{% url 'delete_customer' id=obj.id %}">Delete</a>
                                                         </small>
                                                     </div>
                                                 </div>
