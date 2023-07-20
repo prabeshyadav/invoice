@@ -185,7 +185,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
+                    <tr class="row-bg" onclick="redirectToDetails('{% url 'customerview' id=user.id %}')">
                   
                       <td>{{user.id}}</td>
                       <td>{{user.first_name}}</td>
@@ -214,4 +214,9 @@
   </div>
   </div>
   <script src='main.js'></script>
+  <script>
+    function redirectToDetails(url) {
+      window.location.href = url;
+    }
+  </script>
   {% endblock %}
