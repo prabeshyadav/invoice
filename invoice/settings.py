@@ -143,17 +143,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 
 # settings.py
+from celery.schedules import crontab
 
-# Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use your preferred message broker URL
 
-# settings.py
-
-# Celery Beat Configuration
+# Celery Beat settings
 CELERY_BEAT_SCHEDULE = {
-    'send-periodic-email': {
-        'task': 'your_app.tasks.send_periodic_email',
-        'schedule': 60 * 60,  # Run every hour
+    'send_due_date_email': {
+        'task': 'your_app.tasks.send_due_date_email_task',
+        'schedule': crontab( minute=2),  # Daily at midnight
     },
 }
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+EMAIL_USE_TLS=True
+EMAIL_HOST='smtp.gmail.com'
+EMAIL_PORT=587
+EMAIL_HOST_USER='prabeshyadav087@gmail.com'
+EMAIL_HOST_PASSWORD='jxczromrcicaranv'
+DEFAULT_FROM_EMAIL='celery_testing<prabeshyadav087@gmail.com>'
+

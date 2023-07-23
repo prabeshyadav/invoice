@@ -8,18 +8,14 @@ from django.conf import settings
 from .models import *
 
 from django.template.loader import render_to_string
-import tempfile
-import datetime
 from io import BytesIO
 
 from django.template.loader import get_template
-from django.template.exceptions import TemplateDoesNotExist
 from xhtml2pdf.pisa import CreatePDF
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph
 
 
 
@@ -247,8 +243,7 @@ def IndexView(request, id):
 
 
 def email(request,id):
-    mail=get_object_or_404(Invoice,id=id)
-    context={'mail':mail}
+    context={}
     
     return render(request,'email.html',context)
 
