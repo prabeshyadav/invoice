@@ -266,9 +266,14 @@ def invoicepage(request,id):
     return render(request,'',context)
 
 def EditView(request,id):
+    
+    table_items = TableItems.objects.filter(invoice__id=id)
     data = {
         'user': AddCustomer.objects.all(),
+        # 'invoice': Invoice.objects.all(),
+        'table_items': table_items,
     }
+    
     obj=get_object_or_404(Invoice,id=id)
     if request.method == 'POST':
         form=InvoiceForm(request.POST or None,instance=obj)
