@@ -119,15 +119,16 @@
                       </tr>
                     </thead>
                     <tbody class="line-item-body">
+                    {% for table in data.table_items %}
                       <tr class="line-item new-line-item">
                         <td class="line-item-column">
-                          <input tyfa-pulse="text" name='items_details[]' class="text-field  form-control">
+                          <input tyfa-pulse="text" name='items_details[]' class="text-field  form-control" value={{table.items_details}}>
                         </td>
                         <td class="line-item-column">
-                          <input type="number" min='0' name='quality[]' class="text-field  form-control">
+                          <input type="number" min='0' name='quality[]' class="text-field  form-control" value={{table.quality}}>
                         </td>
                         <td class="line-item-column">
-                          <input type="number" min='0' name="rate[]" class="text-field  form-control">
+                          <input type="number" min='0' name="rate[]" class="text-field  form-control" value={{table.rate}}>
                         </td>
                         <td class="line-item-column">
                           <input type="text" class="text-field  form-control">
@@ -135,22 +136,7 @@
                         <td class="line-item-column" name='amount[]'>{{amount}}
                         </td>
                       </tr>
-                      <tr class="line-item new-line-item">
-                        <td class="line-item-column">
-                          <input tyfa-pulse="text" name='items_details[]' class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column">
-                          <input type="number" min='0' name='quality[]' class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column">
-                          <input type="number" min='0' name="rate[]" class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column">
-                          <input type="text" class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column" name='amount[]'>{{amount}}
-                        </td>
-                      </tr>
+                    {% endfor %}
                     </tbody>
                   </table>
 
