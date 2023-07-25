@@ -174,6 +174,16 @@
                                                         <small class="coll">
                                                             <a href="#" id="modalLink">Edit</a>
                                                         </small>
+
+
+
+
+
+                                                            {% comment %} edit customer detail {% endcomment %}
+
+
+
+
                                                         <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                                             <div class="modal-dialog">
                                                               <div class="modal-content">
@@ -182,10 +192,11 @@
                                                                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body">
-                                                                        <form>
+                                                                        <form method='POST' action='{% url 'editcustomer' id=obj.id %}'>
+                                                                            {% csrf_token %}
                                                                           <div class="form-group">
                                                                             <div class="row">
-                                                                              <span class="col-form-label col-lg-3">Name:</span>
+                                                                              <span class="col-form-label col-lg-3" >Name:</span>
                                                                               <div class="col-lg-9 d-flex">
                                                                                 <select class="form-control col-lg-2  bg-white mr-1" id="salutation">
                                                                                   <option selected disabled>Salutation</option>
@@ -195,26 +206,26 @@
                                                                                   <option value="mrs">Ms.</option>
                                                                                   <option value="dr">Dr.</option>
                                                                                 </select>
-                                                                                <input type="text" class="form-control col-lg-5 mr-1" id="firstName" placeholder="Firstname">
-                                                                                <input type="text" class="form-control col-lg-5" id="lastName" placeholder="Lastname">
+                                                                                <input type="text" class="form-control col-lg-5 mr-1" id="firstName" placeholder="Firstname" name="first_name" value="{{obj.first_name}}">
+                                                                                <input type="text" class="form-control col-lg-5" id="lastName" placeholder="Lastname" name="last_name" value="{{obj.last_name}}">
                                                                               </div>
                                                                             </div>
                                                                           </div>
                                                             
                                                                           <div class="form-group">
                                                                             <div class="row">
-                                                                              <span class="col-form-label col-lg-3">Email Address:</span>
+                                                                              <span class="col-form-label col-lg-3">Email Address md:</span>
                                                                               <div class="col-lg-9">
-                                                                                <input type="text" class="form-control">
+                                                                                <input type="text" value="{{obj.email}}" name="email" class="form-control">
                                                                               </div>
                                                                             </div>
                                                                           </div>
                                                                           <div class="form-group">
                                                                             <div class="row">
-                                                                              <span class="col-form-label col-lg-3">Customer Phone:</span>
+                                                                              <span class="col-form-label col-lg-3" >Customer Phone:</span>
                                                                               <div class="col-lg-9 d-flex">
-                                                                                <input type="text" class="form-control col-lg-6 mr-1"  placeholder="Work Phone">
-                                                                                <input type="text" class="form-control col-lg-6" id="lastName" placeholder="Mobile">
+                                                                                <input type="text" class="form-control col-lg-6 mr-1"  placeholder="Work Phone" name="phone" value="{{obj.phone}}">
+                                                                                <input type="text" class="form-control col-lg-6" id="lastName" placeholder="Mobile" name="mobile" value="{{obj.mobile}}">
                                                                               </div>
                                                                             </div>
                                                                           </div>
@@ -227,12 +238,13 @@
                                                                               </div>
                                                                             </div>
                                                                           </div>
+                                                                          <div class="modal-footer">
+                                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                                            <button type="submit" class="btn btn-primary">Save
+                                                                            </div>
                                                                         </form>
                                                                 </div>
-                                                                <div class="modal-footer">
-                                                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                                  <button type="button" class="btn btn-primary">Save</button>
-                                                                </div>
+                                                                
                                                               </div>
                                                             </div>
                                                           </div>

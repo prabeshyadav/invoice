@@ -21,6 +21,7 @@ urlpatterns = [
     path('email',views.email,name='email'),
     
     path('edit/<int:id>/',views.EditView,name='edit'),
+    path('editcustomer/<int:id>',views.EditCustomer,name='editcustomer'),
     path('email/<int:id>/', views.email, name='email'),
     # path('pdf/',views.generate_pdf,name='pdf'),
     #path('pdf/', views.GeneratePdf.as_view(), name='pdf'),

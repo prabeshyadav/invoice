@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -107,7 +108,7 @@
                   </div>
                 </div>
                 <div class="index-table">
-                  <table class="table table-bordered my-3">
+                  <table class="table table-bordered my-3" id="lineItemTable">
                     <thead class="line-item-header">
                       <tr>
                         <th class="line-item-column over-flow" width="14%" style="min-width: 35px;">ITEM DETAILS</th>
@@ -118,42 +119,40 @@
 
                       </tr>
                     </thead>
-                    <tbody class="line-item-body">
-                    {% for table in data.table_items %}
-                      <tr class="line-item new-line-item">
-                        <td class="line-item-column">
-                          <input tyfa-pulse="text" name='details' class="text-field  form-control item_detail" value={{table.items_details}}>
-                        </td>
-                        <td class="line-item-column">
-                          <input type="number" min='0' name='quantity' class="text-field  form-control quantity" value={{table.quality}}>
-                        </td>
-                        <td class="line-item-column">
-                          <input type="number" min='0' name="rate" class="text-field  form-control rate" value={{table.rate}}>
-                        </td>
-                        <td class="line-item-column">
-                          <input type="text"  name="tax" class="text-field  form-control">
-                        </td>
-                        <td class="line-item-column" onclick="Calculation()">0.00
-                        </td>
-                      </tr>
-                    {% endfor %}
-                    </tbody>
-                  </table>
+                    
+                      <tbody class="line-item-body">
+                      
+                        <tr class="line-item new-line-item item_parent">
+                          <td class="line-item-column">
+                            <input type-="text" name="items_details[]" class="text-field  form-control item_detail" placeholder="details"> 
+                          </td>
+                          <td class="line-item-column">
+                            <input type-="text" name="quality[]" class="text-field  form-control quantity">
+                          </td>
+                          <td class="line-item-column">
+                            <input type-="text" name="rate[]" class="text-field  form-control rate">
+                          </td>
+                          <td class="line-item-column">
+                            <input type-="text" name="tax" class="text-field  form-control">
+                          </td>
+                          <td class="line-item-column ammount" onclick="Calculation()">0.00
+                          </td>
+                        </tr>
+                    }
+                      </tbody>
+                     
+                    
+                    </table>
+                    
+                 
+
 
                 </div>
                 <div class="row">
                   <div class="col-lg-5 ">
                     <!-- dropdown button -->
                     <div class="btn-group">
-                      <button type="button" class="btn btn-light">Add another line</button>
-                      <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-light"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="visually-hidden">Toggle Dropdown</span>
-                      </button>
-                      <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#">Add Items In Bulk</a></li>
-                        <li><a class="dropdown-item" href="#">Add Item Header</a></li>
-                      </ul>
+                      <button type="button" class="btn btn-light" id="addLineButton">Add another line</button>
                     </div>
                     <div class="pt-5 mt-5">
                       <div class="mb-2">Customer Notes</div>
@@ -310,6 +309,24 @@
           row.find('.ammount').text(amount);
         });
       }
+    </script>
+    <script>
+      const lineItemTable = document.getElementById('lineItemTable');
+    const addLineButton = document.getElementById('addLineButton');
+    addLineButton.addEventListener('click', (event)=> {
+        event.preventDefault();
+        const lastRow = lineItemTable.querySelector('.line-item.new-line-item');
+        const newRow = lastRow.cloneNode(true);
+        const inputFields = newRow.querySelectorAll('input');
+        
+        inputFields.forEach(function(input) {
+          input.value = '';
+        });
+    
+        const tableBody = lineItemTable.querySelector('.line-item-body');
+        tableBody.appendChild(newRow);
+    });
+      
     </script>
 
   {% endblock %}
