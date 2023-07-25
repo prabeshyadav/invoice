@@ -9,7 +9,7 @@ addLineButton.addEventListener('click', (event)=> {
     inputFields.forEach(function(input) {
       input.value = '';
     });
-
+​
     const tableBody = lineItemTable.querySelector('.line-item-body');
     tableBody.appendChild(newRow);
 });
