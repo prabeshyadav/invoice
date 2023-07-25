@@ -1,0 +1,316 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block container %}
+
+        <div class="invoice-main-body p-0">
+          <div class="invoice-heading d-flex pl-3">
+            <span class="material-symbols-outlined text-dark pr-1">
+              lab_profile
+            </span>
+            <h5 class="pl-1">Invoice</h5>
+          </div>
+          {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+          <form  method='post' action=''> 
+            {% csrf_token %}
+            <div class="form-first pl-1">
+              <div class="col-lg-8 ">
+                <div class="form-group">
+                  <div class="row pt-5">
+                    <span class="col-form-label col-lg-3 text-danger"> Customer*</span>
+                    <div class="col-lg-9 d-flex">
+                      <select class="form-control col-lg-9 bg-white" id="customer*"  name="customer_name" style="padding: 0px;" >
+                        <option selected disabled value=""> Select Customer</option>
+                        {% for user in users %}
+                          <option value="{{user.id}}" > {{user.first_name}}</option>
+                        {% endfor %}
+    
+                        {% if obj.customer_name %}
+                          <option value="{{obj.customer_name.id }}" selected>{{ obj.customer_name }}</option>
+                        
+                        {% endif %}
+                        {% for u in data.user %}
+                            {% if u != obj.customer_name %}
+                                <option value="{{u.id}}">{{u}}</option>
+                            {% endif %}
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-second" style="padding-left: 21px;">
+              <div class="col-lg-8 p-0">
+                {% comment %} <div class="form-group">
+                  <div class="row pt-2">
+                    <span class="col-form-label col-lg-3 text-danger">Invoice#*</span>
+                    <div class="col-lg-4">
+                      <input type="text" class="form-control" id="invoice" name='invoice_number' name='invoice_number' value="{{obj.invoice_number}}">
+                    </div>
+                  </div>
+                </div> {% endcomment %}
+                <div class="form-group">
+                  <div class="row pt-2">
+                    <span class="col-form-label col-lg-3">Order Number</span>
+                    <div class="col-lg-4">
+                      <input type="number" class="form-control" id="orderno" name='order_number' value="{{obj.order_number}}" >
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="row pt-2">
+                    <span class="col-form-label col-lg-3 text-danger">Invoice Date</span>
+                    <div class="col-lg-2">
+                      <input type="Date" class="form-control" id="orderno" name='invoice_date' value="{{obj.invoice_date|date:'Y-m-d'}}">
+                    </div>
+                    <span class="col-form-label col-lg-1 text-danger">Terms</span>
+                    <div class="col-lg-2">
+                      <input type="text" class="form-control" id="orderno">
+                    </div>
+                    <span class="col-form-label col-lg-2 text-danger">Due Date</span>
+                    <div class="col-lg-2">
+                      <input type="date" class="form-control" id="orderno" name='due_date' value="{{obj.due_date|date:'Y-m-d'}}">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- line -->
+                <hr class="bdr-light xlg">
+
+                <div class="form-group">
+                  <div class="row pt-3">
+                    <span class="col-form-label col-lg-3"> Salesperson</span>
+                    <div class="col-lg-6 d-flex">
+                      <select class="form-control col-lg-8 bg-white" id="customer*" style="padding: 0px;">
+                        <option selected disabled> Select or Add Salesperson</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <!-- line -->
+                <hr class="bdr-light xlg">
+
+                <div class="form-group">
+                  <div class="row">
+                    <span class="col-form-label col-lg-3">Subject</span>
+                    <div class="col-lg-7">
+                      <textarea placeholder="Let your customer know what this invoice is for"
+                        class="form-control text-area " style="height: 35px;" name='subject'>{{obj.subject}}</textarea>
+                    </div>
+                  </div>
+                </div>
+                <div class="index-table">
+                  <table class="table table-bordered my-3">
+                    <thead class="line-item-header">
+                      <tr>
+                        <th class="line-item-column over-flow" width="14%" style="min-width: 35px;">ITEM DETAILS</th>
+                        <th class="line-item-column over-flow" width="8%">QUANTITY</th>
+                        <th class="line-item-column over-flow" width="5%">RATE</th>
+                        <th class="line-item-column over-flow" width="8%">TAX</th>
+                        <th class="line-item-column over-flow" width="3%">AMOUNT</th>
+
+                      </tr>
+                    </thead>
+                    <tbody class="line-item-body">
+                    {% for table in data.table_items %}
+                      <tr class="line-item new-line-item">
+                        <td class="line-item-column">
+                          <input tyfa-pulse="text" name='details' class="text-field  form-control item_detail" value={{table.items_details}}>
+                        </td>
+                        <td class="line-item-column">
+                          <input type="number" min='0' name='quantity' class="text-field  form-control quantity" value={{table.quality}}>
+                        </td>
+                        <td class="line-item-column">
+                          <input type="number" min='0' name="rate" class="text-field  form-control rate" value={{table.rate}}>
+                        </td>
+                        <td class="line-item-column">
+                          <input type="text"  name="tax" class="text-field  form-control">
+                        </td>
+                        <td class="line-item-column" onclick="Calculation()">0.00
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+
+                </div>
+                <div class="row">
+                  <div class="col-lg-5 ">
+                    <!-- dropdown button -->
+                    <div class="btn-group">
+                      <button type="button" class="btn btn-light">Add another line</button>
+                      <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-light"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Add Items In Bulk</a></li>
+                        <li><a class="dropdown-item" href="#">Add Item Header</a></li>
+                      </ul>
+                    </div>
+                    <div class="pt-5 mt-5">
+                      <div class="mb-2">Customer Notes</div>
+                      <div>
+                        <textarea rows="2"></textarea>
+                      </div>
+                      <div>
+                        <small class="form-text" style="font-size: 11px;">Will be displayed on the invoice</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-6  ml-auto mr-4 py-1" style="background-color: #fbfafa;">
+                    <div class="Sub-total my-2">
+                      <div class="row">
+                        <div class="col-lg-10 d-flex">
+                          <div class="col-lg-6">Sub Total</div>
+                          <div class="col-lg-4 p-0"></div>
+                          <div class="col-lg-2"></div>
+                        </div>
+                        <div class="col-lg-2">0.00</div>
+                      </div>
+                      <div class="discount my-2">
+                        <div class="row">
+                          <div class="col-lg-10 d-flex">
+                            <div class="col-lg-6">Discount</div>
+                            <div class="col-lg-4 p-0"><input type-="text" class="text-field  form-control"></div>
+                            <div class="col-lg-2"></div>
+                          </div>
+                          <div class="col-lg-2">0.00</div>
+                        </div>
+                      </div>
+                      <div class="tax my-2">
+                        <div class="row">
+                          <div class="col-lg-10 d-flex">
+                            <div class="col-lg-6">Tax<br><span style="font-size: 11px;" class="text-primary">Apply tax</span></div>
+                            <div class="col-lg-4 p-0"><input type-="text" class="text-field  form-control"></div>
+                            <div class="col-lg-2"></div>
+                          </div>
+                          <div class="col-lg-2">0.00</div>
+                        </div>
+                      </div>
+                      <div class="total mb-3">
+                        <div class="row">
+                          <div class="col-lg-10 d-flex">
+                            <div class="total-label col-lg-6">Total (NPR)</div>
+                            <div class="col-lg-4 p-0"></div>
+                            <div class="col-lg-2"></div>
+                          </div>
+                          <div class="total-amount col-lg-2">0.00</div>
+                        </div>
+                        
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-third mt-4 pl-1">
+          <div class="row pt-3 pl-3">
+            <div class="col-lg-6 col-seperator">
+              <div class="form-group"><div class="mb-2">Terms &amp; Conditions</div>
+               <div>
+                <textarea rows="4" placeholder="Enter the terms and conditions of your business to be displayed in your transaction"  class="text-area form-control">
+                </textarea><div class="form-check form-check-inline d-none"><input class="form-checkbox  form-check-input" type="checkbox"> <label class="form-check-label">
+                <span class="hightlight">Use this in future for all invoices of all customers.</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        </div>
+          <div class="col-lg-3 col-seperator ">
+          <p class="form-control-plaintext">
+            <div class="font-xs">Attach files(s) to Invoice</div>
+              <div class="btn-group" style="width: 11rem;">
+                <button type="button" class="btn btn-light border border-dashed">Upload File</button>
+                <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-light border border-dashed" data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="h2v77o">
+                  <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#">Attach from device</a></li>
+                  <li><a class="dropdown-item" href="#">Attach from cloud</a></li>
+                </ul>
+              </div>
+            
+          </p>
+          <div class=""><small class="text-muted" style="font-size: 12px;">You can upload a maximum of 10 files, 5MB each</small></div>
+            
+            </div>
+            </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-12" style="padding-left: 29px; margin-bottom: 20px;">
+                <hr class="md">
+                <div class="form-group">
+                  <div>
+                    <p class="clearfix mb-0">
+                      Want to get paid faster?
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 262 162" class="icon icon-xlg align-bottom"><ellipse fill="#FF5F00" cx="130.4" cy="81.2" rx="30.1" ry="62.3"></ellipse><path fill="#EB001B" d="M100.3 81.2c0-25.3 11.9-47.7 30.1-62.3C117 8.4 100 2 81.6 2 37.8 2 2.4 37.4 2.4 81.2c0 43.8 35.4 79.2 79.2 79.2 18.5 0 35.4-6.4 48.8-16.9-18.5-14.6-30.1-37.2-30.1-62.3z"></path><path fill="#F79E1B" d="M179.2 2c-18.5 0-35.4 6.4-48.8 16.9 18.3 14.5 30.1 37 30.1 62.3 0 25.3-11.7 47.7-30.1 62.3 13.4 10.6 30.4 16.9 48.8 16.9 43.8 0 79.2-35.4 79.2-79.2C258.4 37.4 223 2 179.2 2z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 620.07" class="icon icon-xlg align-bottom"><path d="M728.98 10.95L477.61 610.69h-164l-123.7-478.62c-7.51-29.48-14.04-40.28-36.88-52.7C115.76 59.14 54.18 40.17 0 28.39l3.68-17.44h263.99c33.65 0 63.9 22.4 71.54 61.15l65.33 347.04L566 10.95h162.98zm642.59 403.93c.66-158.29-218.88-167.01-217.37-237.72.47-21.52 20.96-44.4 65.81-50.24 22.23-2.91 83.48-5.13 152.95 26.84l27.25-127.18c-37.33-13.55-85.36-26.59-145.12-26.59-153.35 0-261.27 81.52-262.18 198.25-.99 86.34 77.03 134.52 135.81 163.21 60.47 29.38 80.76 48.26 80.53 74.54-.43 40.23-48.23 57.99-92.9 58.69-77.98 1.2-123.23-21.1-159.3-37.87L928.93 588.2c36.25 16.63 103.16 31.14 172.53 31.87 162.99 0 269.61-80.51 270.11-205.19m404.94 195.82H1920L1794.75 10.95h-132.44c-29.78 0-54.9 17.34-66.02 44l-232.81 555.74h162.91l32.35-89.59h199.05l18.73 89.59zM1603.4 398.19l81.66-225.18 47 225.18h-128.65zM950.66 10.95L822.37 610.69H667.23L795.57 10.95h155.09z" fill="#1434cb"></path></svg>
+                    </p>
+                    
+                    <div class="text-muted mt-1"><div class="d-inline-block">Configure payment gateways and receive payments online.</div>
+                    <span class="text-primary cursor-pointer">Set up Payment Gateway</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="text-muted mt-9 bg-white ml-3"><b>Additional Fields: </b>Start adding custom fields for your invoices by going to <i>Settings <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 512 512" xml:space="preserve" class="icon icon-sm"><path d="M14.5 429.9h244c6.6 0 12 5.4 12 12V500c0 9.9 11.2 15.5 19.2 9.6L502.1 352c6.5-4.8 6.5-14.5 0-19.3L289.7 175.1c-7.9-5.9-19.2-.2-19.2 9.6v58.1c0 6.6-5.4 12-12 12h-244c-6.6 0-12 5.4-12 12v151c0 6.7 5.4 12.1 12 12.1z" id="Layer_2_1_"></path></svg> Preferences <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 512 512" xml:space="preserve" class="icon icon-sm"><path d="M14.5 429.9h244c6.6 0 12 5.4 12 12V500c0 9.9 11.2 15.5 19.2 9.6L502.1 352c6.5-4.8 6.5-14.5 0-19.3L289.7 175.1c-7.9-5.9-19.2-.2-19.2 9.6v58.1c0 6.6-5.4 12-12 12h-244c-6.6 0-12 5.4-12 12v151c0 6.7 5.4 12.1 12 12.1z" id="Layer_2_1_"></path></svg> Invoices</i></div>
+            <!-- button -->
+            <div class="btn-footer-invoice d-flex my-5">
+              {% if obj.id %}
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" fdprocessedid="g26fur">Update Invoice </button></div>
+              {% else %}
+                <div  class="btn-group mx-3"><button class="border-0  btn-invoice btn btn-primary" nam='draft' fdprocessedid="g26fur">save as drift </button></div>                    
+              {% endif %}
+                <div class="btn-group btn-invoice mr-3" style="width: 10rem;">
+                <button type="button" class="btn btn-primary">save and send</button> 
+                  <button type="button" class="btn  dropdown-toggle dropdown-toggle-split btn-primary" data-bs-toggle="dropdown" aria-expanded="false" fdprocessedid="h2v77o">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Attach from device</a></li>
+                    <li><a class="dropdown-item" href="#">Attach from cloud</a></li>
+                  </ul>
+                </div>
+            
+              <div class="btn-group"><button class="border-0  btn-invoice" fdprocessedid="5gxqg9"> Cancel</button></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+    crossorigin="anonymous"></script>
+    <script src="{% static 'js/invoices.js' %}"></script>
+
+    <script>
+      function Calculation() {
+        // Select all rows with class "line-item"
+        var rows = $('.line-item');
+    
+        rows.each(function () {
+          var row = $(this);
+          var quantity = row.find('.quantity').val();
+          var rate = row.find('.rate').val();
+          var amount = parseFloat(quantity) * parseFloat(rate);
+    
+          // alert(amount)
+          // Set the result in the "amount" cell of the current row
+          row.find('.ammount').text(amount);
+        });
+      }
+    </script>
+
+  {% endblock %}

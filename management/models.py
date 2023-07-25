@@ -84,9 +84,10 @@ class Invoice(models.Model):
 
     @property
     def discount_amount(self):
-        d_amount=self.sub_total-self.discounted_total_amount
-        return d_amount
-    
+        d_amount = self.sub_total - self.discounted_total_amount
+        rounded_d_amount = round(d_amount, 3)
+        return rounded_d_amount
+        
     
 class Items(models.Model):
     type=models.CharField( max_length=50,choices=commons.ITEM_CHOICES,blank=True)

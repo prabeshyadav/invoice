@@ -125,12 +125,12 @@ def InvoiceView(request):
         fm=InvoiceForm(request.POST)
         if fm.is_valid():
             obj = fm.save()
-            invoice_ids = obj.id
+            #invoice_ids = obj.id
             
             items_details = request.POST.getlist('items_details[]')
             quality = request.POST.getlist('quality[]')
             rate = request.POST.getlist('rate[]')
-            amount = request.POST.getlist('quantity1[]')
+            #amount = request.POST.getlist('quantity1[]')
             
             print("-----------------Items detail------------")
             print(request.POST)
@@ -144,6 +144,7 @@ def InvoiceView(request):
                     for i in range(len(items_details))
                 ]
             
+            print(result," mdasdhalsdkjalksdjkajsdlk")
             
             for item in result:
                 TableItems.objects.create(invoice=obj,**item)
@@ -173,6 +174,9 @@ def InvoiceView(request):
 def CustomerViewPage(request, id):
     from django.db.models import Sum,F
     obj=get_object_or_404(AddCustomer, id=id)
+    
+        
+    
     obj1 = obj.invoices.all()
     
     ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quality')))['total_amount']
@@ -284,6 +288,22 @@ def EditView(request,id):
     context={"form":form,"obj":obj, 'data': data}
     return render(request,'invoices.html',context)
 
+
+def EditCustomer(request,id):
+    obj=get_object_or_404(AddCustomer,id=id)
+    if request.method=='POST':
+        
+        form=CustomerModelForm(request.POST,instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Invoice updated successfully.")
+            return redirect('Customer', id=id)
+    else:
+        form = InvoiceForm(instance=obj)
+    
+        
+    context={'form':form,'obj':obj}
+    return render(request,'customerviewpage.html',context)
 
 # def generate_pdf(request):
     
