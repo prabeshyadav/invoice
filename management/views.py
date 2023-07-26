@@ -281,30 +281,35 @@ def EditView(request,id):
             messages.success(request, "Invoice updated successfully.")
             return redirect('indexview', id=id)
         else:
-            messages.error(request, "Form is invalid. Please check the entered data.")    
+            messages.error(request, "Form is invalid. Please check the entered data.") 
+            print(form.errors   )
     else:
         form = InvoiceForm(instance=obj)
         
-    context={"form":form,"obj":obj, 'data': data}
-    return render(request,'invoices.html',context)
+    context={"form":form,"obj":obj, 'data': data,'tables_item':table_items}
+    return render(request,'editinvoice.html',context)
 
 
 def EditCustomer(request,id):
     obj=get_object_or_404(AddCustomer,id=id)
     if request.method=='POST':
         
-        form=CustomerModelForm(request.POST,instance=obj)
+        form=EditCustomerForm(request.POST,instance=obj)
+        
         if form.is_valid():
             form.save()
             messages.success(request, "Invoice updated successfully.")
-            return redirect('Customer', id=id)
+            return redirect('customerview', id=id)
+        else:
+            print(form.errors)
     else:
         form = InvoiceForm(instance=obj)
+        #print(form.errors)
+
     
         
     context={'form':form,'obj':obj}
     return render(request,'customerviewpage.html',context)
-
 # def generate_pdf(request):
     
     
