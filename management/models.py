@@ -78,7 +78,7 @@ class Invoice(models.Model):
         return total
     @property
     def discounted_total_amount(self):
-        discount_percent = 10  # Assuming a discount of 10%, you can replace this with the actual discount value
+        discount_percent = 20  # Assuming a discount of 10%, you can replace this with the actual discount value
         discount = (discount_percent / 100) * self.sub_total
         return self.sub_total - discount
 
