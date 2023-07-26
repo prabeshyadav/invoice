@@ -294,20 +294,51 @@
     <script src="{% static 'js/invoices.js' %}"></script>
 
     <script>
+      
       function Calculation() {
+        var sub_total = 0
         // Select all rows with class "line-item"
         var rows = $('.line-item');
-    
         rows.each(function () {
           var row = $(this);
           var quantity = row.find('.quantity').val();
           var rate = row.find('.rate').val();
           var amount = parseFloat(quantity) * parseFloat(rate);
-    
           // alert(amount)
           // Set the result in the "amount" cell of the current row
           row.find('.ammount').text(amount);
+          sub_total = sub_total+amount;
         });
+        $("#sub_total").text(sub_total)
+        $('#final_total').text(sub_total);
+        DiscountUpdate()
+      }
+
+      $("#discount_ammount").keyup(function(){
+
+        var sub_total = $("#sub_total").text()
+        
+  
+      var discount_amount = $("#discount_ammount").val();
+      var discount_ammount_after = discount_amount/100*sub_total;
+      var final_ammount = sub_total - discount_ammount_after;
+      discount_ammount_after = discount_ammount_after.toFixed(1);
+      final_ammount = final_ammount.toFixed(1);
+      $('#discount_display').text(discount_ammount_after);
+      $('#final_total').text(final_ammount);
+      });
+
+      function DiscountUpdate(){
+        var sub_total = $("#sub_total").text()
+        
+  
+        var discount_amount = $("#discount_ammount").val();
+        var discount_ammount_after = discount_amount/100*sub_total;
+        var final_ammount = sub_total - discount_ammount_after;
+        discount_ammount_after = discount_ammount_after.toFixed(1);
+        final_ammount = final_ammount.toFixed(1);
+        $('#discount_display').text(discount_ammount_after);
+        $('#final_total').text(final_ammount);
       }
     </script>
     <script>
