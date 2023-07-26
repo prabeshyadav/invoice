@@ -10,12 +10,17 @@ class InvoiceForm(forms.ModelForm):
     class Meta:
         model=Invoice
         # fields='__all__'
-        exclude=("invoice_number",)
+        exclude=("invoice_number", "customer_name")
         
 class CustomerModelForm(forms.ModelForm):
     class Meta:
         model = AddCustomer
         fields='__all__'
+        
+class EditCustomerForm(forms.ModelForm):
+    class Meta:
+        model =AddCustomer
+        fields=['first_name','last_name','email','phone','mobile']
         
 
 
