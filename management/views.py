@@ -1,32 +1,30 @@
+from io import BytesIO
+from xhtml2pdf  import pisa
+from .forms import *
+from django.db.models import Sum,F
 from django.shortcuts import render, HttpResponse,redirect, get_object_or_404,HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
-from .forms import *
-from django.views import View
 from django.contrib import messages
 from django.conf import settings
-
-from .models import *
-
 from django.template.loader import render_to_string
-from io import BytesIO
-
 from django.template.loader import get_template
-from xhtml2pdf.pisa import CreatePDF
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-
-
-
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-from management.models import AddCustomer
 from django.urls import reverse
-from xhtml2pdf  import pisa
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
+from .utils import new_invoice_number
+
+
 # Create your views here.
-from .models import *
+
+
+
+
+
 def register(request):
     form= CreateUserForm()
     if request.method=='POST':
@@ -39,9 +37,12 @@ def register(request):
         else:
             return HttpResponse("not valid data")
     context={'forms':form}
+    return render(request,'register.html',context)
     
 
-    return render(request,'register.html',context)
+
+
+
 
 
 def loginPage(request):
@@ -59,9 +60,16 @@ def loginPage(request):
 	return render(request, 'login.html', {'form':form, 'title':'log in'})
 
 
+
+
 def ResetPassword(request):
     context={}
     return render(request,'reset.html',context)
+
+
+
+
+
 
 @login_required
 def logoutUser(request):
@@ -69,14 +77,17 @@ def logoutUser(request):
 	messages.info(request, "Logged out successfully!")
 	return redirect("login")
 
+
+
+
+
+
 @login_required
 def Customer(request):
-    # return HttpResponse(request)
     data = {
         's': commons.SALUTATION_CHOICES,
         'c':commons.CURRENCY_CHOICES,
     }
-    # return HttpResponse(data)
     if request.method=='POST':
         print(request.POST)
         fm=CustomerModelForm(request.POST) 
@@ -89,10 +100,7 @@ def Customer(request):
             messages.error(request, fm.errors )
             print(fm.errors)
 
-            # cleaned_data = fm.cleaned_data
-            # print("cleaned data is ",cleaned_data)
-            # AddCustomer.objects.create(**cleaned_data)
-            # return HttpResponse("saved")
+          
     else:
         fm=AddCUstomerForm()
     context={'forms':fm, 'data': data}
@@ -102,38 +110,22 @@ def Customer(request):
 
 
 
-# @login_required
-# def Customer(request):
-#     form = CustomerModelForm()
-#     if request.method == "POST":
-#         print("DATA GIVEN FORM IS ",request.POST)
-#         a = AddCustomer(**request.POST)
-#         a.save()
-#             # print("DATA GIVEN IS ",request.POST)
-#         # form = CustomerModelForm(request.POST)
-#         # if form.is_valid():
-#         #     form.save()
-#         #     return redirect("index")
-#     context={"form":form}
-#     return render(request,'index.html',context)
+
 
 
 def InvoiceView(request):
     if request.method=='POST':
-        
-        print(request.POST)
         fm=InvoiceForm(request.POST)
-        if fm.is_valid():
-            obj = fm.save()
-            #invoice_ids = obj.id
-            
+        if fm.is_valid():    
+            customer_id = request.POST.get('customer_name')  # Assuming you're passing the customer ID from the form
+            customer = AddCustomer.objects.get(id=customer_id)  # Fetch the customer instance based on the
+            obj = fm.save(commit=False)
+            obj.customer_name = customer
+            obj.save()
             items_details = request.POST.getlist('items_details[]')
             quality = request.POST.getlist('quality[]')
             rate = request.POST.getlist('rate[]')
-            #amount = request.POST.getlist('quantity1[]')
             
-            print("-----------------Items detail------------")
-            print(request.POST)
             
             result = [
                     {
@@ -143,64 +135,60 @@ def InvoiceView(request):
                     }
                     for i in range(len(items_details))
                 ]
-            
-            print(result," mdasdhalsdkjalksdjkajsdlk")
-            
             for item in result:
                 TableItems.objects.create(invoice=obj,**item)
-                
             messages.success(request, "Successfully Added Customer." )
             return redirect(reverse('invoicelist'))
-        
         else:
             print("form is invalid")
             messages.error(request, fm.errors)
             print(fm.errors)
-            
     else:
         fm=InvoiceForm()
-    from .models import AddCustomer
     users = AddCustomer.objects.all()
-
-    # invoice_id = int(Invoice.objects.all().last().invoice_number)+1
-    invoice_id=98
-    context={'forms':fm,'users':users,'invoice_id':invoice_id}
-    
+    get_new_invoice_number = new_invoice_number()
+    context={'forms':fm,'users':users, 'new_invoice_number': get_new_invoice_number}
     return render(request,'invoices.html',context)
+            
+            
+            
+                
+        
+            
+    
+    
+            
+            
 
 
-# def index(request):
-#     return render(request,'index.html')
 def CustomerViewPage(request, id):
-    from django.db.models import Sum,F
     obj=get_object_or_404(AddCustomer, id=id)
+    obj1 = obj.invoices.all()
+    ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quality')))['total_amount']
+    total_sum = ammount_pay_obj
+    context={'obj1': obj1, 'obj': obj,'total_sum':total_sum}
+    return render(request,'customerviewpage.html',context)
     
         
     
-    obj1 = obj.invoices.all()
     
-    ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quality')))['total_amount']
-    # return HttpResponse(ammount_pay_obj)
     
-    total_sum = ammount_pay_obj
 
     
-    context={'obj1': obj1, 'obj': obj,'total_sum':total_sum}
-    return render(request,'customerviewpage.html',context)
 
 def DeleteCustomer(request, id):
-    
     obj = get_object_or_404(AddCustomer, id=id)
     obj.delete()
     return redirect('table')
+    
 
 
 
 def tableView(request):
     user=AddCustomer.objects.all()
-    
     context={'user':user}
     return render(request,'itemslist.html',context)
+    
 
 
 def InvoiceListView(request):
@@ -235,21 +223,17 @@ def home(reequest):
 
 def IndexView(request, id):
     invoice_object = get_object_or_404(Invoice, id=id)
-    # invoice_object = Invoice.objects.get(id=id)
-    
     invoice_items =TableItems.objects.filter(invoice=invoice_object)
     context={'invoice_object': invoice_object,"invoice_items":invoice_items}
     return render(request,'indexview.html',context)
-
-
-
-
-
-
-def email(request,id):
-    context={}
     
-    return render(request,'email.html',context)
+
+
+
+
+
+
+
 
 
 
@@ -361,3 +345,29 @@ def download_invoice_pdf(request, guid):
   
     pdf = render_to_pdf("invoice_pdf.html")
     return HttpResponse(pdf, content_type="application/pdf")
+
+
+def send_mail(request,id):
+    user=AddCustomer.objects.filter(email=id)
+    
+    
+    for customer in user:
+        email = EmailMessage(
+            'Subject of the Email',
+            'Body of the Email',
+            'sender@example.com',  # Sender's email address
+            [customer.email],  # Email address of the customer
+        )
+
+        # Attach PDF or any other attachments as needed
+        pdf_path = 'path_to_your_generated_pdf.pdf'  # Replace with the actual path to your PDF file
+
+        with open(pdf_path, 'rb') as pdf_file:
+            email.attach('invoice.pdf', pdf_file.read(), 'application/pdf')
+
+        email.send()
+
+    return HttpResponse('Emails sent to filtered customers')
+
+def email(request):
+    return render(request,'email.html')

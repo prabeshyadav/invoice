@@ -85,7 +85,7 @@
                     <td>
                       <div class="list-primary">
                         <div class="name" title="Kantipur Infotech">{{invoice_object.customer_name.company_name}}</div>
-                        <span class="float-right amount">NPR252.00</span>
+                        <span class="float-right amount">{{invoice_object.discounted_total_amount}}</span>
                       </div>
                       <div class="list-secondary">
                         <div>
@@ -140,7 +140,7 @@
                 <li class="nav-item ">
                   <button class="details-menu-item text-center nav-link over-flow " type="button">
                     <i class="fa-regular fa-envelope"></i>
-                    <a href="{% url 'email' id=invoice_object.id %}" >Send Mail</a>
+                    <a href="" >Send Mail</a>
                   </button>
                 </li>
                 <li class="nav-item ">

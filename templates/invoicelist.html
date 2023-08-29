@@ -194,10 +194,10 @@
 
 
                       </th>
+
                 
                       <th scope="col">DATE</th>
                       <th scope="col">INVOICE#</th>
-                      <th scope="col">ORDER NUMBER</th>
                       <th scope="col">CUSTOMER Name</th>
                       <th scope="col">DUE DATE</th>
                       <th scope="col">AMOUNT</th>
@@ -212,10 +212,9 @@
                       <td>{{forloop.counter}}</td>
                       <td>{{user.invoice_date}}</td>
                       <td>{{user.invoice_number}}</td>
-                      <td>{{user.order_number}}</td>
                       <td>{{user.customer_name.fullname}}</td>
                       <td>{{user.due_date}}</td>
-                      <td>{{user.amount}}</td>
+                      <td>{{user.sub_total}}</td>
                       <td>{{user.discounted_total_amount}}</td>
                     </tr>
                     
