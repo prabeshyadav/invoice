@@ -1,5 +1,4 @@
 
-
 {% extends 'base.html' %}
 {% load static %}
 
@@ -160,7 +159,7 @@
                         <div class="row">
                           <div class="col-lg-10 d-flex">
                             <div class="col-lg-6">Discount(%)</div>
-                            <div class="col-lg-4 p-0"><input type-="text" class="text-field  form-control" id="discount_ammount"></div>
+                            <div class="col-lg-4 p-0"><input type-="text" class="text-field  form-control discount_amt" id="discount_ammount"></div>
                             <div class="col-lg-2"></div>
                           </div>
                           <div class="col-lg-2" id="discount_display">0.00</div>
@@ -277,75 +276,42 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
     crossorigin="anonymous"></script>
-
-
-
     <script>
-      
+      var sub_total = 0
       function Calculation() {
-        var sub_total = 0
         // Select all rows with class "line-item"
         var rows = $('.line-item');
+        
         rows.each(function () {
           var row = $(this);
           var quantity = row.find('.quantity').val();
           var rate = row.find('.rate').val();
           var amount = parseFloat(quantity) * parseFloat(rate);
+    
           // alert(amount)
           // Set the result in the "amount" cell of the current row
           row.find('.ammount').text(amount);
           sub_total = sub_total+amount;
+          
         });
         $("#sub_total").text(sub_total)
         $('#final_total').text(sub_total);
-        DiscountUpdate()
       }
-
-      $("#discount_ammount").keyup(function(){
-
-        var sub_total = $("#sub_total").text()
-        
-  
-      var discount_amount = $("#discount_ammount").val();
-      var discount_ammount_after = discount_amount/100*sub_total;
-      var final_ammount = sub_total - discount_ammount_after;
-      discount_ammount_after = discount_ammount_after.toFixed(1);
-      final_ammount = final_ammount.toFixed(1);
-      $('#discount_display').text(discount_ammount_after);
-      $('#final_total').text(final_ammount);
-      });
-
-      function DiscountUpdate(){
-        var sub_total = $("#sub_total").text()
-        
-  
-        var discount_amount = $("#discount_ammount").val();
-        var discount_ammount_after = discount_amount/100*sub_total;
-        var final_ammount = sub_total - discount_ammount_after;
-        discount_ammount_after = discount_ammount_after.toFixed(1);
-        final_ammount = final_ammount.toFixed(1);
-        $('#discount_display').text(discount_ammount_after);
-        $('#final_total').text(final_ammount);
-      }
-    </script>
-<script>
-  const lineItemTable = document.getElementById('lineItemTable');
-const addLineButton = document.getElementById('addLineButton');
-addLineButton.addEventListener('click', (event)=> {
-    event.preventDefault();
-    const lastRow = lineItemTable.querySelector('.line-item.new-line-item');
-    const newRow = lastRow.cloneNode(true);
-    const inputFields = newRow.querySelectorAll('input');
-    
-    inputFields.forEach(function(input) {
-      input.value = '';
+    $("#discount_ammount").keyup(function(){
+     var discount_amount = $("#discount_ammount").val();
+     var discount_ammount_after = discount_amount/100*sub_total;
+     var final_ammount = sub_total - discount_ammount_after;
+     discount_ammount_after = discount_ammount_after.toFixed(1);
+     final_ammount = final_ammount.toFixed(1);
+     $('#discount_display').text(discount_ammount_after);
+     $('#final_total').text(final_ammount);
     });
+      
+    </script>
+    
 
-    const tableBody = lineItemTable.querySelector('.line-item-body');
-    tableBody.appendChild(newRow);
-});
+
   
-</script>
 
 
 </body>
