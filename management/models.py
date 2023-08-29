@@ -38,7 +38,6 @@ class Invoice(models.Model):
     customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE, related_name="invoices")
     invoice_number=models.CharField(max_length=25,unique=True)
     
-    order_number=models.IntegerField()
     invoice_date=models.DateField()
     due_date=models.DateField()
     subject=models.CharField(max_length=255)
@@ -48,22 +47,22 @@ class Invoice(models.Model):
         ('paid', 'Paid'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', blank=True, null=True)
-    def __str__(self):
-        return f"Invoice of id {self.id}"
+    # def __str__(self):
+    #     return f"Invoice of id {self.id}"
     
-    def save(self,*args, **kwargs):
-        # generate random alphanumeric invoice number 
-        # this also handles if the random number is already existed in db
-        if not self.invoice_number:
-            invoice_number = get_random_string(length=6)
-            has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
-            count = 1
-            while has_invoice_id:
-                count += 1
-                invoice_number = invoice_number + str(count)
-                has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
-            self.invoice_number = invoice_number.upper()
-        super().save(*args, **kwargs)
+    # # def save(self,*args, **kwargs):
+    # #     # generate random alphanumeric invoice number 
+    # #     # this also handles if the random number is already existed in db
+    # #     if not self.invoice_number:
+    # #         invoice_number = get_random_string(length=6)
+    # #         has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
+    # #         count = 1
+    # #         while has_invoice_id:
+    # #             count += 1
+    # #             invoice_number = invoice_number + str(count)
+    # #             has_invoice_id = Invoice.objects.filter(invoice_number=invoice_number).exists()
+    # #         self.invoice_number = invoice_number.upper()
+    # #     super().save(*args, **kwargs)
         
     
     @property
@@ -78,7 +77,7 @@ class Invoice(models.Model):
         return total
     @property
     def discounted_total_amount(self):
-        discount_percent = 20  # Assuming a discount of 10%, you can replace this with the actual discount value
+        discount_percent = 10  # Assuming a discount of 10%, you can replace this with the actual discount value
         discount = (discount_percent / 100) * self.sub_total
         return self.sub_total - discount
 
@@ -101,7 +100,7 @@ class TableItems(models.Model):
     items_details=models.CharField(max_length=225)
     quality=models.IntegerField()
     rate=models.IntegerField()
-    invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE)
+    invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE, null=True)
     
     
     @property
