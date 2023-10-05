@@ -120,15 +120,15 @@
                             <input type-="text" name="items_details[]" class="text-field  form-control item_detail" placeholder="details"> 
                           </td>
                           <td class="line-item-column">
-                            <input type-="text" name="quality[]" class="text-field  form-control quantity">
+                            <input type-="text" name="quality[]" class="text-field  form-control quantity" onchange="Calculation()">
                           </td>
                           <td class="line-item-column">
-                            <input type-="text" name="rate[]" class="text-field  form-control rate">
+                            <input type-="text" name="rate[]" class="text-field  form-control rate" onchange="Calculation()">
                           </td>
                           <td class="line-item-column">
                             <input type-="text" name="tax" class="text-field  form-control">
                           </td>
-                          <td class="line-item-column ammount" onclick="Calculation()">0.00
+                          <td class="line-item-column ammount">0.00
                           </td>
                         </tr>
                     
@@ -165,16 +165,16 @@
                           <div class="col-lg-4 p-0"></div>
                           <div class="col-lg-2"></div>
                         </div>
-                        <div class="col-lg-2">0.00</div>
+                        <div class="col-lg-2" id="sub_total">0.00</div>
                       </div>
                       <div class="discount my-2">
                         <div class="row">
                           <div class="col-lg-10 d-flex">
                             <div class="col-lg-6">Discount</div>
-                            <div class="col-lg-4 p-0"><input type-="text" name="discount" class="text-field  form-control"></div>
+                            <div class="col-lg-4 p-0"><input type-="text" name="discount" class="text-field  form-control" value=''></div>
                             <div class="col-lg-2"></div>
                           </div>
-                          <div class="col-lg-2">0.00</div>
+                          <div class="col-lg-2" id="discount">0.00</div>
                         </div>
                       </div>
                       <div class="tax my-2">
@@ -193,8 +193,8 @@
                             <div class="total-label col-lg-6">Total (NPR)</div>
                             <div class="col-lg-4 p-0"></div>
                             <div class="col-lg-2"></div>
-                          </div>
-                          <div class="total-amount col-lg-2">0.00</div>
+                          </div> 
+                          <div class="total-amount col-lg-2" id="final_total">0.00</div>
                         </div>
                         
                       </div>
@@ -287,53 +287,45 @@
     <script src="{% static 'js/invoices.js' %}"></script>
 
     <script>
-      
+      var sub_total = 0
       function Calculation() {
-        var sub_total = 0
         // Select all rows with class "line-item"
+        var sub_total = 0
         var rows = $('.line-item');
+        
         rows.each(function () {
           var row = $(this);
           var quantity = row.find('.quantity').val();
           var rate = row.find('.rate').val();
           var amount = parseFloat(quantity) * parseFloat(rate);
+    
           // alert(amount)
           // Set the result in the "amount" cell of the current row
           row.find('.ammount').text(amount);
           sub_total = sub_total+amount;
+          discount = sub_total/10;
+          final_total = sub_total-discount;
+
+          $("#sub_total").text(sub_total)
+          $("#discount").text(discount)
+          $('#final_total').text(final_total);
+
         });
-        $("#sub_total").text(sub_total)
-        $('#final_total').text(sub_total);
-        DiscountUpdate()
-      }
-
-      $("#discount_ammount").keyup(function(){
-
-        var sub_total = $("#sub_total").text()
         
-  
-      var discount_amount = $("#discount_ammount").val();
-      var discount_ammount_after = discount_amount/100*sub_total;
-      var final_ammount = sub_total - discount_ammount_after;
-      discount_ammount_after = discount_ammount_after.toFixed(1);
-      final_ammount = final_ammount.toFixed(1);
-      $('#discount_display').text(discount_ammount_after);
-      $('#final_total').text(final_ammount);
-      });
-
-      function DiscountUpdate(){
-        var sub_total = $("#sub_total").text()
-        
-  
-        var discount_amount = $("#discount_ammount").val();
-        var discount_ammount_after = discount_amount/100*sub_total;
-        var final_ammount = sub_total - discount_ammount_after;
-        discount_ammount_after = discount_ammount_after.toFixed(1);
-        final_ammount = final_ammount.toFixed(1);
-        $('#discount_display').text(discount_ammount_after);
-        $('#final_total').text(final_ammount);
       }
+     
+    $("#discount_ammount").keyup(function(){
+     var discount_amount = $("#discount_ammount").val();
+     var discount_ammount_after = discount_amount/100*sub_total;
+     var final_ammount = sub_total - discount_ammount_after;
+     discount_ammount_after = discount_ammount_after.toFixed(1);
+     final_ammount = final_ammount.toFixed(1);
+     $('#discount_display').text(discount_ammount_after);
+     $('#final_total').text(final_ammount);
+    }); 
+      
     </script>
+
     <script>
       const lineItemTable = document.getElementById('lineItemTable');
     const addLineButton = document.getElementById('addLineButton');
