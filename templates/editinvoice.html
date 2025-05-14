@@ -111,15 +111,15 @@
                           <input type-="text" name="details" class="text-field  form-control item_detail" name='items_details' placeholder="details" value="{{item.items_details}}">
                         </td>
                         <td class="line-item-column">
-                          <input type-="text" name="quantity" class="text-field  form-control quantity" name=quality value="{{item.quality}}">
+                          <input type-="text" name="quantity" class="text-field  form-control quantity" onchange="Calculation()" name=quality value="{{item.quality}}">
                         </td>
                         <td class="line-item-column">
-                          <input type-="text" name="rate" class="text-field  form-control rate" name='rate' value="{{item.rate}}">
+                          <input type-="text" name="rate" class="text-field  form-control rate" name='rate'onchange="Calculation()" value="{{item.rate}}">
                         </td>
                         <td class="line-item-column">
                           <input type-="text" name="tax" class="text-field  form-control">
                         </td>
-                        <td class="line-item-column ammount" onclick="Calculation()">{{item.amount}}
+                        <td class="line-item-column ammount">{{item.amount}}
                         </td>
                       </tr>
                       {% endfor %}
@@ -292,10 +292,12 @@
           // Set the result in the "amount" cell of the current row
           row.find('.ammount').text(amount);
           sub_total = sub_total+amount;
-          
+
+          $("#sub_total").text(sub_total)
+          $('#final_total').text(sub_total);
+
         });
-        $("#sub_total").text(sub_total)
-        $('#final_total').text(sub_total);
+        
       }
     $("#discount_ammount").keyup(function(){
      var discount_amount = $("#discount_ammount").val();
