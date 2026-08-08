@@ -22,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_0lntjo&0dc%2h@qn)!0%z)$e(anzv2kyqbbc5)qt$r!7_7mg$'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-_0lntjo&0dc%2h@qn)!0%z)$e(anzv2kyqbbc5)qt$r!7_7mg$')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 
 # Application definition
@@ -40,11 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'management',
-
-
-    
-    
-
 ]
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 
@@ -62,10 +57,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'invoice.urls'
-# WKHTMLTOPDF_PATH = '/path/to/wkhtmltopdf'
-# pdfkit_config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
-# PDFKIT_CONFIG = pdfkit_config
-
 
 TEMPLATES = [
     {
@@ -121,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = os.environ.get('TIME_ZONE', 'UTC')
 
 USE_I18N = True
 
@@ -145,20 +136,21 @@ LOGIN_URL = 'login'
 # settings.py
 from celery.schedules import crontab
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use your preferred message broker URL
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
 
 # Celery Beat settings
 CELERY_BEAT_SCHEDULE = {
     'send_due_date_email': {
-        'task': 'your_app.tasks.send_due_date_email_task',
-        'schedule': crontab( minute=2),  # Daily at midnight
+        'task': 'management.tasks.send_due_date_email_task',
+        'schedule': crontab(minute=2),
     },
 }
-EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_TLS=True
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_PORT=587
-EMAIL_HOST_USER='prabeshyadav087@gmail.com'
-EMAIL_HOST_PASSWORD='jxczromrcicaranv'
-DEFAULT_FROM_EMAIL='celery_testing<prabeshyadav087@gmail.com>'
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'prabeshyadav087@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'jxczromrcicaranv')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'celery_testing<prabeshyadav087@gmail.com>')
+
 
