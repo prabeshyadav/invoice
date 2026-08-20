@@ -37,11 +37,12 @@ class AddCUstomerForm(forms.Form):
 class CreateUserForm(UserCreationForm):
     class Meta:
         model=User
-        fields=['username','email','password1','password2']
+        fields=['username','email']
+
     
     
 class TableItemsForm(forms.Form):
     items_details=forms.CharField(max_length=225)
-    quality=forms.IntegerField()
+    quantity=forms.IntegerField()
     rate=forms.IntegerField()
-    amount=models.IntegerField()
+

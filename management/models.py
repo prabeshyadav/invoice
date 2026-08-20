@@ -98,12 +98,13 @@ class Items(models.Model):
 
 class TableItems(models.Model):
     items_details=models.CharField(max_length=225)
-    quality=models.IntegerField()
+    quantity=models.IntegerField()
     rate=models.IntegerField()
     invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE, null=True)
     
     
     @property
     def amount(self):
-        return self.quality * self.rate
+        return self.quantity * self.rate
+
     
