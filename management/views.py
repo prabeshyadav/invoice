@@ -51,13 +51,14 @@ def loginPage(request):
 		password = request.POST['password']
 		user = authenticate(request, username = username, password = password)
 		if user is not None:
-			form = login(request, user)
-			messages.success(request, f' wecome {username} !!')
+			login(request, user)
+			messages.success(request, f' welcome {username} !!')
 			return redirect('table')
 		else:
-			messages.info(request, f'account done not exit plz sign in')
+			messages.info(request, f'Account does not exist or password incorrect. Please try again.')
 	form = CreateUserForm()
 	return render(request, 'login.html', {'form':form, 'title':'log in'})
+
 
 
 
@@ -123,21 +124,21 @@ def InvoiceView(request):
             obj.customer_name = customer
             obj.save()
             items_details = request.POST.getlist('items_details[]')
-            quality = request.POST.getlist('quality[]')
+            quantity = request.POST.getlist('quantity[]')
             rate = request.POST.getlist('rate[]')
             
             
             result = [
                     {
                         'items_details': items_details[i],
-                        'quality': quality[i],
+                        'quantity': quantity[i],
                         'rate': rate[i]
                     }
                     for i in range(len(items_details))
                 ]
             for item in result:
                 TableItems.objects.create(invoice=obj,**item)
-            messages.success(request, "Successfully Added Customer." )
+            messages.success(request, "Successfully Added Invoice.")
             return redirect(reverse('invoicelist'))
         else:
             print("form is invalid")
@@ -164,10 +165,11 @@ def InvoiceView(request):
 def CustomerViewPage(request, id):
     obj=get_object_or_404(AddCustomer, id=id)
     obj1 = obj.invoices.all()
-    ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quality')))['total_amount']
+    ammount_pay_obj = TableItems.objects.filter(invoice__customer_name__id = id).aggregate(total_amount = Sum(F('rate')*F('quantity')))['total_amount']
     total_sum = ammount_pay_obj
     context={'obj1': obj1, 'obj': obj,'total_sum':total_sum}
     return render(request,'customerviewpage.html',context)
+
     
         
     
@@ -282,18 +284,18 @@ def EditCustomer(request,id):
         
         if form.is_valid():
             form.save()
-            messages.success(request, "Invoice updated successfully.")
+            messages.success(request, "Customer updated successfully.")
             return redirect('customerview', id=id)
         else:
             print(form.errors)
     else:
-        form = InvoiceForm(instance=obj)
-        #print(form.errors)
+        form = EditCustomerForm(instance=obj)
 
     
         
     context={'form':form,'obj':obj}
     return render(request,'customerviewpage.html',context)
+
 # def generate_pdf(request):
     
     

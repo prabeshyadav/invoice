@@ -141,10 +141,11 @@ CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
 # Celery Beat settings
 CELERY_BEAT_SCHEDULE = {
     'send_due_date_email': {
-        'task': 'management.tasks.send_due_date_email_task',
+        'task': 'management.tasks.send_due_date_email',
         'schedule': crontab(minute=2),
     },
 }
+
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
