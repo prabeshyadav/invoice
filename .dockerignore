@@ -12,3 +12,5 @@ __pycache__/
 celerybeat-schedule*
 Archive.zip
 staticfiiles/
+# Keep the backend image lean: the Next.js app ships in its own image.
+frontend/

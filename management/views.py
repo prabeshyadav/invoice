@@ -322,20 +322,30 @@ def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html = template.render(context_dict)
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+    # Use UTF-8 so non-latin characters (e.g. Nepali names) don't raise
+    # UnicodeEncodeError. The pisaDocument call also needs to know the encoding.
+    pdf = pisa.pisaDocument(
+        BytesIO(html.encode("UTF-8")),
+        result,
+        encoding="UTF-8",
+    )
     if not pdf.err:
         return HttpResponse(result.getvalue(), content_type="application/pdf")
     return None
 
-def pdf(request,id):
+def pdf(request, id):
     invoice_object = get_object_or_404(Invoice, id=id)
-    
-    invoice_items =TableItems.objects.filter(invoice=invoice_object)
-    data={'invoice_object': invoice_object,"invoice_items":invoice_items}
+    invoice_items = TableItems.objects.filter(invoice=invoice_object)
+    data = {'invoice_object': invoice_object, 'invoice_items': invoice_items}
 
-    pdf = render_to_pdf("invoice_pdf.html", data)
-    return HttpResponse(pdf, content_type="application/pdf")
-    # return render(request,'invoice_pdf.html',)
+    response = render_to_pdf("invoice_pdf.html", data)
+    if response is None:
+        return HttpResponse("Could not generate PDF.", status=500)
+    # render_to_pdf already returns an HttpResponse — return it directly.
+    response['Content-Disposition'] = (
+        f'inline; filename="invoice-{invoice_object.invoice_number}.pdf"'
+    )
+    return response
 
 
 
