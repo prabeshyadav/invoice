@@ -1,5 +1,7 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
+from .api import RegisterView, router as api_router
 
 
 urlpatterns = [
@@ -21,5 +23,11 @@ urlpatterns = [
     path('edit/<int:id>/',views.EditView,name='edit'),
     path('editcustomer/<int:id>',views.EditCustomer,name='editcustomer'),
     
-    path('pdf/<int:id>/',views.pdf,name='PfdMd')
+    path('pdf/<int:id>/',views.pdf,name='PfdMd'),
+
+    # REST API (JWT) — HTML views above are untouched.
+    path('api/auth/register/', RegisterView.as_view(), name='api-register'),
+    path('api/auth/token/', TokenObtainPairView.as_view(), name='api-token'),
+    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='api-token-refresh'),
+    path('api/', include(api_router.urls)),
 ]

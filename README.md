@@ -49,6 +49,29 @@ requirements.txt     # Python dependencies
 
 ## Setup
 
+### Option A — Docker (recommended)
+
+Runs backend (Django API + HTML), frontend (Next.js), Redis, and Celery
+worker/beat together. Host port 8000 is assumed taken, so the API is exposed
+on host port **8002** and the frontend on **3000**.
+
+```bash
+docker compose up -d --build
+```
+
+- Frontend: http://127.0.0.1:3000
+- Backend API/HTML: http://127.0.0.1:8002
+- Migrations run automatically on backend startup. The container reuses the
+  mounted `db.sqlite3`; Redis inside compose is internal only (a host
+  redis-server on 6379 keeps working for local dev).
+
+```bash
+docker compose logs -f backend frontend   # follow logs
+docker compose down                       # stop everything
+```
+
+### Option B — local virtualenv
+
 1. **Clone and create a virtual environment**
    ```bash
    python -m venv venv
@@ -92,8 +115,7 @@ requirements.txt     # Python dependencies
 
 ## URLs
 
-| Path | View | Description |
-|---|---|---|
+| Path | View | Description ||---|---|---|
 | `/` | `Customer` | Add customer / customer list landing page |
 | `/login/` | `loginPage` | Login |
 | `/logout/` | `logoutUser` | Logout |
@@ -111,6 +133,55 @@ requirements.txt     # Python dependencies
 | `/items/` | `ItemView` | Items page |
 | `/email` | `email` | Email page |
 | `/admin/` | Django admin | Manage data via Django admin |
+
+## REST API (JWT)
+
+The same data is available as JSON under `/api/` (HTML pages above are untouched).
+All endpoints except registration and token issue require authentication via
+`Authorization: Bearer <access-token>`.
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/auth/register/` | Create user (`username`, `email`, `password`) |
+| `POST` | `/api/auth/token/` | Obtain access + refresh tokens |
+| `POST` | `/api/auth/token/refresh/` | Refresh the access token |
+| `GET/POST` | `/api/customers/` | List / create customers |
+| `GET/PUT/PATCH/DELETE` | `/api/customers/{id}/` | Customer detail |
+| `GET/POST` | `/api/invoices/` | List / create invoices (accepts nested `line_items`; `invoice_number` auto-generated as `KIT-10x` if omitted) |
+| `GET/PUT/PATCH/DELETE` | `/api/invoices/{id}/` | Invoice detail (includes `sub_total`, `discount_amount`, `discounted_total_amount`) |
+| `GET` | `/api/invoices/{id}/pdf/` | Download invoice as PDF |
+| `POST` | `/api/invoices/{id}/send_email/` | Email invoice PDF (`to`, `subject`, `message` optional; defaults to the customer) |
+| `GET/POST` | `/api/line-items/` | Line items (filter: `?invoice={id}`) |
+| `GET/POST` | `/api/items/` | Reusable catalog items |
+
+Quick start:
+
+```bash
+curl -X POST http://127.0.0.1:8001/api/auth/token/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"you","password":"secret"}'
+curl http://127.0.0.1:8001/api/invoices/ \
+  -H "Authorization: Bearer <access-token>"
+```
+
+## Frontend (Next.js)
+
+`frontend/` is a Next.js 16 + Tailwind app for the API above: login/register,
+dashboard, customer CRUD, invoice CRUD with line items, invoice PDF download,
+email sending, and catalog items. The browser calls same-origin `/api/*`,
+which Next.js proxies to Django (see `frontend/app/api/[...slug]/route.ts`),
+so no CORS setup is needed.
+
+```bash
+# Terminal 1 — Django API
+python manage.py runserver 127.0.0.1:8001
+
+# Terminal 2 — frontend
+cd frontend && npm install && npm run dev -- --port 3000
+```
+
+Open http://127.0.0.1:3000. To point at another backend, set `API_URL`
+(e.g. `API_URL=http://127.0.0.1:8001`) — see `frontend/.env.example`.
 
 ## Notes
 
