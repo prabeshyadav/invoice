@@ -44,6 +44,14 @@ export default function LoginPage() {
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <ErrorBanner message={error} />
+        {error?.includes("verify your email") && (
+          <p className="-mt-2 text-sm text-muted">
+            Didn&apos;t get the email?{" "}
+            <Link href="/verify-email" className="font-medium text-accent hover:underline">
+              Resend verification link
+            </Link>
+          </p>
+        )}
         <Field label="Username">
           <input
             className={`${inputCls} h-11`}
@@ -64,6 +72,11 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </Field>
+        <div className="-mt-1 flex justify-end">
+          <Link href="/forgot-password" className="text-sm font-medium text-accent hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <button type="submit" disabled={busy} className={`${btnPrimary} h-11 w-full`}>
           {busy && <Spinner inline />}
           {busy ? "Signing in…" : "Sign in"}
