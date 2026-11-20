@@ -443,4 +443,82 @@ class SendInvoiceEmailTests(TestCase):
         self.assertEqual(mail.outbox, [])
 
 
-#END
+DASHBOARD_TODAY = date(2026, 6, 15)
+
+
+class DashboardTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.customer = make_customer(owner=self.owner)
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def _invoice(self, number, status, due_in_days, items=((1, 100),), **extra):
+        invoice = make_invoice(self.customer, number, items=items)
+        invoice.status = status
+        invoice.due_date = DASHBOARD_TODAY + timedelta(days=due_in_days)
+        for key, value in extra.items():
+            setattr(invoice, key, value)
+        invoice.save()
+        return invoice
+
+    def _get(self):
+        with patch('management.api.timezone.localdate', return_value=DASHBOARD_TODAY):
+            return self.client.get('/api/dashboard/')
+
+    def test_totals_by_status_match_invoice_totals(self):
+        self._invoice('KIT-101', 'paid', -30, items=((2, 50),))    # 100.00
+        self._invoice('KIT-102', 'sent', 10, items=((1, 200),))    # 200.00
+        self._invoice('KIT-103', 'draft', 20, items=((1, 50),))    # 50.00
+        self._invoice('KIT-104', 'sent', -1, items=((Decimal('1.5'), Decimal('10.25')),),
+                      discount_percent=Decimal('10'), tax_percent=Decimal('13'))  # overdue
+        self._invoice('KIT-105', 'sent', 0, items=((1, 10),))      # due today: not overdue
+        overdue_total = Invoice.objects.get(invoice_number='KIT-104').total
+        self.assertEqual(overdue_total, Decimal('15.64'))  # 15.38 - 1.54 = 13.84, + 13% tax 1.80
+
+        res = self._get()
+        self.assertEqual(res.status_code, 200)
+        d = res.data
+        self.assertEqual(d['invoice_count'], 5)
+        self.assertEqual(d['customer_count'], 1)
+        self.assertEqual(d['totals'], {
+            'billed': '375.64', 'collected': '100.00',
+            'outstanding': '275.64', 'overdue': '15.64',
+        })
+        self.assertEqual(d['by_status'], {
+            'paid': {'count': 1, 'amount': '100.00'},
+            'sent': {'count': 2, 'amount': '210.00'},
+            'draft': {'count': 1, 'amount': '50.00'},
+            'overdue': {'count': 1, 'amount': '15.64'},
+        })
+        self.assertEqual([i['invoice_number'] for i in d['recent']],
+                         ['KIT-105', 'KIT-104', 'KIT-103', 'KIT-102', 'KIT-101'])
+        self.assertEqual(d['recent'][1]['total'], '15.64')
+        self.assertEqual(d['recent'][1]['customer_display_name'], 'Customer 1')
+        # Unpaid and not overdue, soonest due first.
+        self.assertEqual([i['invoice_number'] for i in d['upcoming']], ['KIT-105', 'KIT-102', 'KIT-103'])
+
+    def test_only_counts_own_data(self):
+        self._invoice('KIT-101', 'sent', 5)
+        stranger = User.objects.create_user('stranger')
+        make_invoice(make_customer(7, owner=stranger), 'KIT-101')
+        d = self._get().data
+        self.assertEqual((d['invoice_count'], d['customer_count']), (1, 1))
+        self.assertEqual(d['totals']['billed'], '100.00')
+
+    def test_empty(self):
+        d = self._get().data
+        self.assertEqual(d['invoice_count'], 0)
+        self.assertEqual(d['totals']['billed'], '0.00')
+        self.assertEqual((d['recent'], d['upcoming']), ([], []))
+
+    def test_query_count_is_constant(self):
+        for n in range(3):
+            self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
+        with self.assertNumQueries(3):
+            self._get()
+        for n in range(3, 15):
+            self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
+        with self.assertNumQueries(3):
+            res = self._get()
+        self.assertEqual(res.data['invoice_count'], 15)
