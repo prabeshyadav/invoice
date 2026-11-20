@@ -106,10 +106,10 @@ function CustomerDetailBody() {
   if (!customer) return <ErrorBanner message={error ?? "Customer not found."} />;
 
   const name = customerName(customer);
-  const total = invoices.reduce((s, i) => s + Number(i.discounted_total_amount), 0);
+  const total = invoices.reduce((s, i) => s + Number(i.total), 0);
   const outstanding = invoices
     .filter((i) => i.status !== "paid")
-    .reduce((s, i) => s + Number(i.discounted_total_amount), 0);
+    .reduce((s, i) => s + Number(i.total), 0);
 
   if (editing) {
     return (
@@ -226,7 +226,7 @@ function CustomerDetailBody() {
                           <StatusBadge status={displayStatus(inv)} />
                         </td>
                         <td className={`${td} tabular text-right font-medium`}>
-                          {formatMoney(inv.discounted_total_amount)}
+                          {formatMoney(inv.total)}
                         </td>
                       </tr>
                     ))}
