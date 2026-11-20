@@ -1,4 +1,4 @@
-"""REST API (JWT) served alongside the existing HTML views under /api/."""
+"""REST API (JWT) under /api/. Every queryset is scoped to request.user."""
 
 from django.core.mail import EmailMessage
 from rest_framework import permissions, viewsets
@@ -15,7 +15,7 @@ from .serializers import (
     RegisterSerializer,
     TableItemsSerializer,
 )
-from .views import render_to_pdf
+from .pdf import render_to_pdf
 
 
 class RegisterView(CreateAPIView):

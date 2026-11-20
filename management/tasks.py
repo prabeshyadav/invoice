@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from .models import Invoice
-from .views import render_to_pdf
+from .pdf import render_to_pdf
 
 
 @shared_task
