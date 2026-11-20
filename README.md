@@ -89,9 +89,11 @@ docker compose run --rm --no-deps backend python manage.py test management   # b
    pip install -r requirements.txt
    ```
 
-3. **Configure secrets**
+3. **Enable development mode**
 
-   `invoice/settings.py` currently has `SECRET_KEY`, `EMAIL_HOST_USER`, and `EMAIL_HOST_PASSWORD` hardcoded. Before running this anywhere beyond local experimentation, move these to environment variables (e.g. via `os.environ` or `python-decouple`) and **rotate the credentials currently committed to the repo**.
+   Settings default to production (`DEBUG` off, a real `SECRET_KEY` required).
+   For local work run `export DEBUG=True`, which also enables the built-in
+   development secret key and SQLite.
 
 4. **Run migrations**
    ```bash
@@ -118,6 +120,47 @@ docker compose run --rm --no-deps backend python manage.py test management   # b
    celery -A invoice worker -l info
    celery -A invoice beat -l info
    ```
+
+## Production deployment
+
+`docker-compose.prod.yml` runs PostgreSQL, gunicorn (migrations on start),
+Celery worker + beat, Redis and the Next.js frontend. Static files are served
+by WhiteNoise. Put a TLS-terminating reverse proxy (Caddy, nginx or a load
+balancer) in front of the frontend port; it forwards `/api/*` to Django.
+
+1. Create `.env` next to the compose file (required):
+
+   | Variable | Required | Default | Purpose |
+   |---|---|---|---|
+   | `SECRET_KEY` | yes | — | 50+ random characters. Startup fails if missing or `django-insecure-…` while `DEBUG` is off. Generate: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
+   | `POSTGRES_PASSWORD` | yes | — | Database password (URL-safe characters only; it is embedded in `DATABASE_URL`) |
+   | `POSTGRES_USER` / `POSTGRES_DB` | no | `invoice` | Database user and name |
+   | `ALLOWED_HOSTS` | yes | `localhost,127.0.0.1,backend` | Your domain(s). Keep `backend`: the frontend proxy and healthcheck use it |
+   | `CSRF_TRUSTED_ORIGINS` | for `/admin` | — | e.g. `https://invoice.example.com` |
+   | `SECURE_HSTS_SECONDS` | recommended | `0` | e.g. `31536000` once HTTPS works everywhere |
+   | `SECURE_HSTS_INCLUDE_SUBDOMAINS` | no | `False` | Only if every subdomain is HTTPS |
+   | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | for email | — | SMTP for invoice emails and reminders |
+   | `GUNICORN_WORKERS` / `GUNICORN_TIMEOUT` | no | `3` / `60` | Web server tuning |
+   | `THROTTLE_AUTH` / `THROTTLE_ANON` / `THROTTLE_USER` | no | `10/min` / `200/hour` / `5000/hour` | API rate limits (login/register use `auth`) |
+   | `CONN_MAX_AGE` | no | `60` | Seconds to keep DB connections open |
+   | `LOG_LEVEL` / `DJANGO_LOG_LEVEL` | no | `INFO` | Console log levels |
+   | `FRONTEND_PORT` | no | `3000` | Host port for the frontend |
+   | `REMINDER_DAYS_BEFORE_DUE`, `TIME_ZONE` | no | `3`, `UTC` | Reminder schedule |
+
+   The compose file sets `DEBUG=False`, `DATABASE_URL`, `CELERY_BROKER_URL` and
+   `CACHE_URL` (Redis, so rate limits are shared across workers) itself.
+
+2. Start it and create an admin user:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+   ```
+
+3. `GET /api/health/` returns `{"status": "ok"}` when Django and the database
+   are up; point uptime monitoring at it. Check settings with
+   `docker compose -f docker-compose.prod.yml exec backend python manage.py check --deploy`
+   (`security.W008` is expected: HTTPS redirects belong to the reverse proxy).
 
 ## URLs
 
@@ -192,4 +235,4 @@ Open http://127.0.0.1:3000. To point at another backend, set `API_URL`
 ## Notes
 
 - `requirements.txt` pins `Django==6.0.6`, but the codebase (`invoice/settings.py`) is annotated as generated for Django 4.1 — confirm compatibility before deploying.
-- `DEBUG = True` and `ALLOWED_HOSTS = []` in `invoice/settings.py` are development defaults and must be changed for any non-local deployment.
+- Settings default to production (`DEBUG` off). The dev `docker-compose.yml` sets `DEBUG=True`; see "Production deployment" for everything else.
