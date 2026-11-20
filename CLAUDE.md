@@ -15,6 +15,9 @@ docker compose up -d --build frontend                # rebuild the UI after fron
 - `.env` is optional because `invoice/settings.py` has dev defaults. Copy `.env.example` to set SMTP. Without it, emailing an invoice fails.
 - The backend mounts the repo, so Python changes hot-reload. The frontend is a production image, so rebuild it to see UI changes.
 - Migrations run on backend start. The SQLite DB is `./db.sqlite3`.
+- Settings default to **production**: `DEBUG` is off and a real `SECRET_KEY` is required (`invoice/env.py::resolve_secret_key`). The dev compose sets `DEBUG=True`; running `manage.py` outside it needs `DEBUG=True` too.
+- Production: `docker compose -f docker-compose.prod.yml up -d --build` (Postgres, gunicorn, WhiteNoise, Redis cache). Required `.env` variables are listed in README → "Production deployment". Health check: `GET /api/health/`.
+- Login and register are rate-limited (`throttle_scope = 'auth'`, `management/auth_views.py`). Tests that hit them repeatedly should `cache.clear()` in `setUp`.
 
 Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/eslint lib components app` and `npm run build`.
 
