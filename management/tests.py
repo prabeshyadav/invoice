@@ -662,3 +662,12 @@ class AccountEmailTests(TestCase):
         self.assertTrue(User.objects.get(username='newbie').is_active)
         self.assertEqual(mail.outbox, [])
         self.assertEqual(self._login('newbie', self.PASSWORD).status_code, 200)
+
+
+class CeleryWiringTests(TestCase):
+    def test_tasks_queued_from_django_use_the_configured_broker(self):
+        # Without invoice/__init__.py loading the Celery app, .delay() from a web
+        # request falls back to Celery's default amqp://localhost and crashes.
+        app = tasks.send_invoice_email.app
+        self.assertEqual(app.main, 'invoice')
+        self.assertEqual(app.conf.broker_url, settings.CELERY_BROKER_URL)
