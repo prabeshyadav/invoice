@@ -139,7 +139,9 @@ balancer) in front of the frontend port; it forwards `/api/*` to Django.
    | `CSRF_TRUSTED_ORIGINS` | for `/admin` | — | e.g. `https://invoice.example.com` |
    | `SECURE_HSTS_SECONDS` | recommended | `0` | e.g. `31536000` once HTTPS works everywhere |
    | `SECURE_HSTS_INCLUDE_SUBDOMAINS` | no | `False` | Only if every subdomain is HTTPS |
-   | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | for email | — | SMTP for invoice emails and reminders |
+   | `EMAIL_*`, `DEFAULT_FROM_EMAIL` | for email | — | SMTP for invoice emails, reminders, verification and password reset |
+   | `FRONTEND_URL` | yes | `http://127.0.0.1:3000` | Public URL of the app; links in verification and reset emails point here |
+   | `EMAIL_VERIFICATION_REQUIRED` | no | `True` | New accounts stay inactive until the emailed link is opened |
    | `GUNICORN_WORKERS` / `GUNICORN_TIMEOUT` | no | `3` / `60` | Web server tuning |
    | `THROTTLE_AUTH` / `THROTTLE_ANON` / `THROTTLE_USER` | no | `10/min` / `200/hour` / `5000/hour` | API rate limits (login/register use `auth`) |
    | `CONN_MAX_AGE` | no | `60` | Seconds to keep DB connections open |
@@ -191,9 +193,13 @@ All endpoints except registration and token issue require authentication via
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/auth/register/` | Create user (`username`, `email`, `password`) |
-| `POST` | `/api/auth/token/` | Obtain access + refresh tokens |
+| `POST` | `/api/auth/register/` | Create user (`username`, `email`, `password`). Returns `verification_required`; when true the account is inactive until the emailed link is used |
+| `POST` | `/api/auth/token/` | Obtain access + refresh tokens (unverified accounts get "Please verify your email before signing in.") |
 | `POST` | `/api/auth/token/refresh/` | Refresh the access token |
+| `POST` | `/api/auth/verify-email/` | Activate an account (`uid`, `token` from the email link) |
+| `POST` | `/api/auth/verify-email/resend/` | Re-send the verification link (`email`); always the same 200 response |
+| `POST` | `/api/auth/password-reset/` | Email a reset link (`email`); always the same 200 response |
+| `POST` | `/api/auth/password-reset/confirm/` | Set a new password (`uid`, `token`, `new_password`) |
 | `GET/POST` | `/api/customers/` | List / create customers |
 | `GET/PUT/PATCH/DELETE` | `/api/customers/{id}/` | Customer detail |
 | `GET/POST` | `/api/invoices/` | List / create invoices (accepts nested `line_items`; `invoice_number` auto-generated as `KIT-10x` if omitted) |
