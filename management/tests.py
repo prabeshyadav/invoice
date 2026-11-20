@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from django.db import IntegrityError
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.utils.module_loading import import_string
@@ -19,6 +20,7 @@ from invoice.env import resolve_secret_key
 
 from . import tasks
 from .models import AddCustomer, Invoice, Items, TableItems
+from .utils import new_invoice_number
 
 
 def default_owner():
@@ -343,3 +345,180 @@ class ProductionReadinessTests(TestCase):
             resolve_secret_key('django-insecure-abc', debug=False)
         self.assertEqual(resolve_secret_key('s3cret-value', debug=False), 's3cret-value')
         self.assertTrue(resolve_secret_key('', debug=True).startswith('django-insecure'))
+
+
+class InvoiceNumberingTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.customer = make_customer(owner=self.owner)
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def _post(self, **extra):
+        return self.client.post('/api/invoices/', {
+            'customer_name': self.customer.id, 'invoice_date': '2026-01-01',
+            'due_date': '2026-01-31', 'subject': 'Work', **extra,
+        }, format='json')
+
+    def test_starts_at_kit_101(self):
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-101')
+
+    def test_uses_highest_suffix_not_latest_row(self):
+        make_invoice(self.customer, 'KIT-150')
+        make_invoice(self.customer, 'KIT-99')      # created later, lower number
+        make_invoice(self.customer, 'INV-2026-7')  # manual, non-KIT
+        make_invoice(self.customer, 'KIT-abc')     # manual, non-numeric suffix
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-151')
+
+    def test_numeric_not_string_ordering(self):
+        make_invoice(self.customer, 'KIT-999')
+        make_invoice(self.customer, 'KIT-1000')
+        # String ordering would pick KIT-999; numeric ordering must not.
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-1001')
+
+    def test_sequential_api_creates_are_per_owner(self):
+        numbers = [self._post().data['invoice_number'] for _ in range(3)]
+        self.assertEqual(numbers, ['KIT-101', 'KIT-102', 'KIT-103'])
+        other = User.objects.create_user('other')
+        make_customer(9, owner=other)
+        self.assertEqual(new_invoice_number(other), 'KIT-101')
+
+    def test_integrity_error_on_create_is_a_400(self):
+        with patch('management.serializers.Invoice.objects.create', side_effect=IntegrityError('dup')):
+            res = self._post()
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('invoice_number', res.data)
+
+
+class SendInvoiceEmailTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.invoice = make_invoice(make_customer(owner=self.owner), 'KIT-101')
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def test_endpoint_queues_task_and_returns_202(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(
+                f'/api/invoices/{self.invoice.id}/send_email/',
+                {'to': 'boss@example.com', 'subject': 'Hi', 'message': 'Pay'}, format='json',
+            )
+        self.assertEqual(res.status_code, 202)
+        self.assertIn('boss@example.com', res.data['detail'])
+        delay.assert_called_once_with(self.invoice.id, 'boss@example.com', 'Hi', 'Pay')
+
+    def test_defaults_to_customer_email(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(f'/api/invoices/{self.invoice.id}/send_email/', {}, format='json')
+        self.assertEqual(res.status_code, 202)
+        self.assertEqual(delay.call_args.args[1], 'c1@example.com')
+        self.assertIn('KIT-101', delay.call_args.args[2])
+
+    def test_invalid_address_is_400(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(
+                f'/api/invoices/{self.invoice.id}/send_email/', {'to': 'nope'}, format='json'
+            )
+        self.assertEqual(res.status_code, 400)
+        delay.assert_not_called()
+
+    def test_other_users_invoice_is_404(self):
+        intruder = APIClient()
+        intruder.force_authenticate(User.objects.create_user('intruder'))
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = intruder.post(f'/api/invoices/{self.invoice.id}/send_email/', {}, format='json')
+        self.assertEqual(res.status_code, 404)
+        delay.assert_not_called()
+
+    def test_task_sends_email_with_pdf(self):
+        tasks.send_invoice_email(self.invoice.id, 'boss@example.com', 'Hi', 'Pay')
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual((msg.to, msg.subject, msg.body), (['boss@example.com'], 'Hi', 'Pay'))
+        self.assertEqual(msg.attachments[0][0], 'invoice-KIT-101.pdf')
+        self.assertEqual(msg.attachments[0][2], 'application/pdf')
+
+    def test_task_ignores_deleted_invoice(self):
+        tasks.send_invoice_email(999999, 'boss@example.com', 'Hi', 'Pay')
+        self.assertEqual(mail.outbox, [])
+
+
+DASHBOARD_TODAY = date(2026, 6, 15)
+
+
+class DashboardTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.customer = make_customer(owner=self.owner)
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def _invoice(self, number, status, due_in_days, items=((1, 100),), **extra):
+        invoice = make_invoice(self.customer, number, items=items)
+        invoice.status = status
+        invoice.due_date = DASHBOARD_TODAY + timedelta(days=due_in_days)
+        for key, value in extra.items():
+            setattr(invoice, key, value)
+        invoice.save()
+        return invoice
+
+    def _get(self):
+        with patch('management.api.timezone.localdate', return_value=DASHBOARD_TODAY):
+            return self.client.get('/api/dashboard/')
+
+    def test_totals_by_status_match_invoice_totals(self):
+        self._invoice('KIT-101', 'paid', -30, items=((2, 50),))    # 100.00
+        self._invoice('KIT-102', 'sent', 10, items=((1, 200),))    # 200.00
+        self._invoice('KIT-103', 'draft', 20, items=((1, 50),))    # 50.00
+        self._invoice('KIT-104', 'sent', -1, items=((Decimal('1.5'), Decimal('10.25')),),
+                      discount_percent=Decimal('10'), tax_percent=Decimal('13'))  # overdue
+        self._invoice('KIT-105', 'sent', 0, items=((1, 10),))      # due today: not overdue
+        overdue_total = Invoice.objects.get(invoice_number='KIT-104').total
+        self.assertEqual(overdue_total, Decimal('15.64'))  # 15.38 - 1.54 = 13.84, + 13% tax 1.80
+
+        res = self._get()
+        self.assertEqual(res.status_code, 200)
+        d = res.data
+        self.assertEqual(d['invoice_count'], 5)
+        self.assertEqual(d['customer_count'], 1)
+        self.assertEqual(d['totals'], {
+            'billed': '375.64', 'collected': '100.00',
+            'outstanding': '275.64', 'overdue': '15.64',
+        })
+        self.assertEqual(d['by_status'], {
+            'paid': {'count': 1, 'amount': '100.00'},
+            'sent': {'count': 2, 'amount': '210.00'},
+            'draft': {'count': 1, 'amount': '50.00'},
+            'overdue': {'count': 1, 'amount': '15.64'},
+        })
+        self.assertEqual([i['invoice_number'] for i in d['recent']],
+                         ['KIT-105', 'KIT-104', 'KIT-103', 'KIT-102', 'KIT-101'])
+        self.assertEqual(d['recent'][1]['total'], '15.64')
+        self.assertEqual(d['recent'][1]['customer_display_name'], 'Customer 1')
+        # Unpaid and not overdue, soonest due first.
+        self.assertEqual([i['invoice_number'] for i in d['upcoming']], ['KIT-105', 'KIT-102', 'KIT-103'])
+
+    def test_only_counts_own_data(self):
+        self._invoice('KIT-101', 'sent', 5)
+        stranger = User.objects.create_user('stranger')
+        make_invoice(make_customer(7, owner=stranger), 'KIT-101')
+        d = self._get().data
+        self.assertEqual((d['invoice_count'], d['customer_count']), (1, 1))
+        self.assertEqual(d['totals']['billed'], '100.00')
+
+    def test_empty(self):
+        d = self._get().data
+        self.assertEqual(d['invoice_count'], 0)
+        self.assertEqual(d['totals']['billed'], '0.00')
+        self.assertEqual((d['recent'], d['upcoming']), ([], []))
+
+    def test_query_count_is_constant(self):
+        for n in range(3):
+            self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
+        with self.assertNumQueries(3):
+            self._get()
+        for n in range(3, 15):
+            self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
+        with self.assertNumQueries(3):
+            res = self._get()
+        self.assertEqual(res.data['invoice_count'], 15)

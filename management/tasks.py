@@ -58,3 +58,20 @@ def send_due_date_email(invoice_id):
     if pdf is not None:
         email.attach(f'invoice-{invoice.invoice_number}.pdf', pdf.content, 'application/pdf')
     email.send()
+
+
+@shared_task(autoretry_for=(SMTPException, OSError), retry_backoff=True, max_retries=3)
+def send_invoice_email(invoice_id, to, subject, message):
+    """Email an invoice PDF. Queued by POST /api/invoices/{id}/send_email/, which
+    has already checked ownership, so the request isn't held up by PDF and SMTP work."""
+    invoice = Invoice.objects.filter(pk=invoice_id).first()
+    if invoice is None:
+        return
+    email = EmailMultiAlternatives(subject=subject, body=message, to=[to])
+    pdf = render_to_pdf('invoice_pdf.html', {
+        'invoice_object': invoice,
+        'invoice_items': invoice.tableitems_set.all(),
+    })
+    if pdf is not None:
+        email.attach(f'invoice-{invoice.invoice_number}.pdf', pdf.content, 'application/pdf')
+    email.send()

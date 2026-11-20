@@ -1,4 +1,7 @@
+from contextlib import contextmanager
+
 from django.contrib.auth.models import User
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 
 from .models import AddCustomer, Invoice, Items, TableItems
@@ -26,6 +29,19 @@ class OwnedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
 
     def get_queryset(self):
         return super().get_queryset().filter(**{self.owner_lookup: self.context['request'].user})
+
+
+@contextmanager
+def _duplicate_number_as_400():
+    """Run the write atomically; a unique clash that slipped past validation
+    (two requests at once) becomes a 400 on invoice_number instead of a 500."""
+    try:
+        with transaction.atomic():
+            yield
+    except IntegrityError:
+        raise serializers.ValidationError(
+            {'invoice_number': ['This invoice number is already in use. Please try again.']}
+        )
 
 
 def money_field():
@@ -93,25 +109,49 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop('tableitems_set', [])
-        if not validated_data.get('invoice_number'):
-            validated_data['invoice_number'] = new_invoice_number(validated_data['owner'])
-        invoice = Invoice.objects.create(**validated_data)
-        for item_data in items_data:
-            item_data.pop('invoice', None)
-            TableItems.objects.create(invoice=invoice, **item_data)
+        with _duplicate_number_as_400():
+            if not validated_data.get('invoice_number'):
+                validated_data['invoice_number'] = new_invoice_number(validated_data['owner'])
+            invoice = Invoice.objects.create(**validated_data)
+            for item_data in items_data:
+                item_data.pop('invoice', None)
+                TableItems.objects.create(invoice=invoice, **item_data)
         return invoice
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop('tableitems_set', None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        if items_data is not None:
-            instance.tableitems_set.all().delete()
-            for item_data in items_data:
-                item_data.pop('invoice', None)
-                TableItems.objects.create(invoice=instance, **item_data)
+        with _duplicate_number_as_400():
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            if items_data is not None:
+                instance.tableitems_set.all().delete()
+                for item_data in items_data:
+                    item_data.pop('invoice', None)
+                    TableItems.objects.create(invoice=instance, **item_data)
         return instance
+
+
+class SendEmailSerializer(serializers.Serializer):
+    """Optional overrides for POST /api/invoices/{id}/send_email/."""
+    to = serializers.EmailField(required=False, allow_blank=True)
+    subject = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    message = serializers.CharField(required=False, allow_blank=True)
+
+
+class DashboardInvoiceSerializer(serializers.ModelSerializer):
+    """The invoice fields the dashboard lists need (no line items)."""
+    customer_display_name = serializers.CharField(
+        source='customer_name.customer_display_name', read_only=True
+    )
+    total = money_field()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'customer_name', 'customer_display_name', 'invoice_number',
+            'invoice_date', 'due_date', 'subject', 'status', 'total',
+        ]
 
 
 class ItemsSerializer(serializers.ModelSerializer):
