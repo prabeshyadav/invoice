@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from .api import RegisterView, router as api_router
+from . import auth_views
 
 
 urlpatterns = [
@@ -26,8 +27,9 @@ urlpatterns = [
     path('pdf/<int:id>/',views.pdf,name='PfdMd'),
 
     # REST API (JWT) — HTML views above are untouched.
-    path('api/auth/register/', RegisterView.as_view(), name='api-register'),
-    path('api/auth/token/', TokenObtainPairView.as_view(), name='api-token'),
+    path('api/auth/register/', auth_views.ThrottledRegisterView.as_view(), name='api-register'),
+    path('api/auth/token/', auth_views.ThrottledTokenObtainPairView.as_view(), name='api-token'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='api-token-refresh'),
+    path('api/health/', auth_views.HealthView.as_view(), name='api-health'),
     path('api/', include(api_router.urls)),
 ]
