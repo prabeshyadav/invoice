@@ -227,6 +227,13 @@ email sending, and catalog items. The browser calls same-origin `/api/*`,
 which Next.js proxies to Django (see `frontend/app/api/[...slug]/route.ts`),
 so no CORS setup is needed.
 
+Login state lives in httpOnly cookies set by Next.js (`/api/session/login`,
+`/api/session/logout`, `GET /api/session`). The proxy turns the `access`
+cookie into a `Bearer` header for Django and refreshes it when it expires, so
+tokens are never readable from JavaScript. Mutating requests must be
+same-origin (Origin/Referer check). Behind a TLS-terminating reverse proxy, forward
+`X-Forwarded-Proto` and `X-Forwarded-Host` (or set `COOKIE_SECURE=true`).
+
 ```bash
 # Terminal 1 — Django API
 python manage.py runserver 127.0.0.1:8001

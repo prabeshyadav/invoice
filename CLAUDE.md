@@ -31,10 +31,12 @@ Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/esli
 | `management/api.py`, `serializers.py` | DRF viewsets under `/api/` (JWT). Used by the frontend. |
 | `management/pdf.py`, `templates/` | `render_to_pdf` plus the PDF (`invoice_pdf.html`) and email templates. The legacy HTML views were removed; only `/api/*` and `/admin/` are served. |
 | `management/tests.py` | API tests, including a query-count test for the invoice list |
-| `frontend/lib/api.ts` | Typed API client, token storage, refresh-on-401, formatting helpers |
-| `frontend/lib/auth.tsx` | `AuthProvider`, `useAuth`, `RequireAuth` |
+| `frontend/lib/api.ts` | Typed API client (same-origin, cookie-authenticated), formatting helpers |
+| `frontend/lib/auth.tsx` | `AuthProvider` (bootstraps from `GET /api/session`), `useAuth`, `RequireAuth` |
+| `frontend/lib/session.ts` | Server-only: session cookies, CSRF same-origin check, token refresh |
+| `frontend/app/api/session/` | `GET` session state, `POST login` / `POST logout`. These set and clear the httpOnly JWT cookies |
 | `frontend/components/ui.tsx` | Design system: class tokens (`btnPrimary`, `inputCls`, `card`, …) and components (`Card`, `PageHeader`, `StatusBadge`, …) |
-| `frontend/app/api/[...slug]/route.ts` | Proxies `/api/*` to Django (`API_URL`), so there is no CORS |
+| `frontend/app/api/[...slug]/route.ts` | Proxies `/api/*` to Django (`API_URL`), so there is no CORS. Adds `Authorization` from the `access` cookie and refreshes once on 401 |
 
 ## Conventions
 
@@ -43,6 +45,7 @@ Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/esli
 - **API:** Django needs trailing slashes, and the proxy adds them. Lists are paginated (20 per page), so call `listAll()` to fetch every page. `GET /api/invoices/?customer=<id>` filters by customer.
 - **Dashboard:** `GET /api/dashboard/` returns counts, totals (billed, collected, outstanding, overdue), `by_status`, the 6 most recent and 5 upcoming invoices in 3 queries. The dashboard page uses it instead of downloading every invoice. Totals reuse `Invoice.total`, so they match the invoice pages to the cent.
 - **Slow work goes to Celery:** `POST /api/invoices/{id}/send_email/` validates, queues `send_invoice_email` and returns 202. SMTP failures surface in the worker log (with retries), not in the response.
+- **Auth (security-critical):** JWTs never reach browser JavaScript. `POST /api/session/login` stores `access`, `refresh` and `username` as httpOnly, `SameSite=Lax` cookies. They are Secure behind https (`x-forwarded-proto`) or when `COOKIE_SECURE=true`. The proxy ignores any client `Authorization` header and refuses to proxy `auth/token` and `auth/token/refresh`. Non-GET requests to `/api/*` must be same-origin (Origin, falling back to Referer, compared to `x-forwarded-host` or `host`); otherwise they get 403. Do not store tokens in `localStorage`.
 - **Tenancy (security-critical):** `AddCustomer`, `Invoice` and `Items` have a required `owner`; line items are owned through their invoice. Every viewset must use `OwnedViewSetMixin` (`management/api.py`), which filters by `request.user` and sets the owner on create. Related fields that point at owned objects use `OwnedPrimaryKeyRelatedField`. Uniqueness (customer email, invoice number) is per owner. Every new endpoint needs a test proving another user gets 404.
 - **Backend:** keep list endpoints free of N+1 queries. Model properties must use `self.tableitems_set.all()` so that `prefetch_related` applies. Every list endpoint you add or change needs an `assertNumQueries` test.
 
