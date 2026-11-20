@@ -671,3 +671,53 @@ class CeleryWiringTests(TestCase):
         app = tasks.send_invoice_email.app
         self.assertEqual(app.main, 'invoice')
         self.assertEqual(app.conf.broker_url, settings.CELERY_BROKER_URL)
+
+
+class ClientIdentityThrottleTests(TestCase):
+    """Django sits behind the Next.js proxy, so REMOTE_ADDR is always the proxy.
+    Limits must follow the real client (X-Forwarded-For) and the account."""
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user('alice', 'alice@example.com', 'Str0ng-pass-2026')
+        User.objects.create_user('bob', 'bob@example.com', 'Str0ng-pass-2026')
+
+    def tearDown(self):
+        cache.clear()
+
+    def _login(self, username, ip):
+        return APIClient().post(
+            '/api/auth/token/', {'username': username, 'password': 'wrong'},
+            format='json', HTTP_X_FORWARDED_FOR=ip,
+        ).status_code
+
+    def test_clients_behind_the_proxy_have_separate_ip_limits(self):
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '2/min', 'auth_identifier': '100/min'}):
+            first = [self._login('alice', '203.0.113.1') for _ in range(3)]
+            other_client = self._login('bob', '203.0.113.2')
+        self.assertEqual(first, [401, 401, 429])
+        self.assertEqual(other_client, 401)
+
+    def test_only_the_proxy_appended_address_is_trusted(self):
+        # A client-supplied entry before the proxy's own must not change identity.
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '2/min', 'auth_identifier': '100/min'}):
+            codes = [self._login('alice', f'10.0.0.{n}, 203.0.113.9') for n in range(3)]
+        self.assertEqual(codes, [401, 401, 429])
+
+    def test_login_is_limited_per_username_across_ips(self):
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '100/min', 'auth_identifier': '2/min'}):
+            alice = [self._login('alice', f'198.51.100.{n}') for n in range(3)]
+            bob = self._login('bob', '198.51.100.50')
+        self.assertEqual(alice, [401, 401, 429])
+        self.assertEqual(bob, 401)
+
+    def test_password_reset_is_limited_per_email_across_ips(self):
+        def reset(email, ip):
+            return APIClient().post(
+                '/api/auth/password-reset/', {'email': email}, format='json', HTTP_X_FORWARDED_FOR=ip,
+            ).status_code
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '100/min', 'auth_identifier': '2/min'}):
+            same_email = [reset('ALICE@example.com', f'198.51.100.{n}') for n in range(3)]
+            other = reset('bob@example.com', '198.51.100.60')
+        self.assertEqual(same_email, [200, 200, 429])
+        self.assertEqual(other, 200)

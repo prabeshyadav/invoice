@@ -235,7 +235,15 @@ REST_FRAMEWORK = {
         'anon': os.environ.get('THROTTLE_ANON', '200/hour'),
         'user': os.environ.get('THROTTLE_USER', '5000/hour'),
         'auth': os.environ.get('THROTTLE_AUTH', '10/min'),
+        # Per username/email on login, password reset and verification resend,
+        # so spoofed client IPs can't bypass brute-force limits.
+        'auth_identifier': os.environ.get('THROTTLE_AUTH_IDENTIFIER', '10/min'),
     },
+    # Django is only reached through the Next.js proxy, which forwards
+    # X-Forwarded-For. Trust that many entries from the right (1 = the address
+    # Next.js or the TLS reverse proxy in front of it recorded). Add one per
+    # extra proxy that appends to the header (e.g. a CDN in front of nginx).
+    'NUM_PROXIES': int(os.environ.get('TRUSTED_PROXY_COUNT', '1')),
 }
 
 SIMPLE_JWT = {
