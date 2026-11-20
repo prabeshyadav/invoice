@@ -144,6 +144,8 @@ balancer) in front of the frontend port; it forwards `/api/*` to Django.
    | `EMAIL_VERIFICATION_REQUIRED` | no | `True` | New accounts stay inactive until the emailed link is opened |
    | `GUNICORN_WORKERS` / `GUNICORN_TIMEOUT` | no | `3` / `60` | Web server tuning |
    | `THROTTLE_AUTH` / `THROTTLE_ANON` / `THROTTLE_USER` | no | `10/min` / `200/hour` / `5000/hour` | API rate limits (login/register use `auth`) |
+   | `THROTTLE_AUTH_IDENTIFIER` | no | `10/min` | Extra limit per username (login) or email (password reset, verification resend), regardless of IP |
+   | `TRUSTED_PROXY_COUNT` | no | `1` | Proxies that append to `X-Forwarded-For` before Django. Rate limits key on the client IP the outermost trusted proxy recorded. Keep `1` for reverse proxy → Next.js → Django; add one per extra appending proxy (e.g. a CDN) |
    | `CONN_MAX_AGE` | no | `60` | Seconds to keep DB connections open |
    | `LOG_LEVEL` / `DJANGO_LOG_LEVEL` | no | `INFO` | Console log levels |
    | `FRONTEND_PORT` | no | `3000` | Host port for the frontend |
@@ -151,6 +153,11 @@ balancer) in front of the frontend port; it forwards `/api/*` to Django.
 
    The compose file sets `DEBUG=False`, `POSTGRES_HOST=db`, `CELERY_BROKER_URL` and
    `CACHE_URL` (Redis, so rate limits are shared across workers) itself.
+
+   The reverse proxy must set `X-Forwarded-For` to the client address: nginx
+   `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` (Caddy does
+   it by default). Without it, each visitor's own header is used for the
+   per-IP limits; the per-username/email limit still applies.
 
 2. Start it and create an admin user:
 
