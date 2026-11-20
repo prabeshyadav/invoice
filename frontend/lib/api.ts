@@ -7,8 +7,6 @@ export const SALUTATIONS = ["Mr.", "Mrs.", "Miss.", "Ms.", "Dr."];
 export const CURRENCIES = ["NPR-Nepales", "AUD", "CAD", "CNI"];
 export const LANGUAGES = ["ENGLISH", "NEPALI"];
 export const ITEM_TYPES = ["Goods", "Services"];
-/* Mirrors the hard-coded 10% in Invoice.discounted_total_amount. */
-export const DISCOUNT_PERCENT = 10;
 
 export interface Customer {
   id: number;
@@ -33,9 +31,9 @@ export interface LineItem {
   id: number;
   invoice: number;
   items_details: string;
-  quantity: number;
-  rate: number;
-  amount: number;
+  quantity: string;
+  rate: string;
+  amount: string;
 }
 
 export interface Invoice {
@@ -47,10 +45,16 @@ export interface Invoice {
   due_date: string;
   subject: string;
   status: string;
+  discount_percent: string;
+  tax_percent: string;
   line_items: LineItem[];
-  sub_total: number;
-  discount_amount: number;
-  discounted_total_amount: number;
+  /* Money fields are Decimal strings from DRF ("12.50"); use Number()/formatMoney. */
+  sub_total: string;
+  discount_amount: string;
+  /* Sub total after discount, before tax. */
+  discounted_total_amount: string;
+  tax_amount: string;
+  total: string;
 }
 
 export interface CatalogItem {
@@ -58,8 +62,8 @@ export interface CatalogItem {
   type: string;
   name: string;
   description: string;
-  selling_price: number;
-  tax: number;
+  selling_price: string;
+  tax_rate: string;
   unit: string;
 }
 
@@ -196,6 +200,15 @@ export function formatMoney(value: number | string | null | undefined): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+/* Round to cents, half up, like the backend (live previews only; the API is authoritative). */
+export function roundMoney(n: number): number {
+  return Math.round((n + Number.EPSILON * Math.max(1, Math.abs(n))) * 100) / 100;
+}
+
+export function formatPercent(value: number | string | null | undefined): string {
+  return `${Number(value ?? 0)}%`;
 }
 
 export function formatDate(iso: string | null | undefined): string {

@@ -28,6 +28,11 @@ class OwnedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
         return super().get_queryset().filter(**{self.owner_lookup: self.context['request'].user})
 
 
+def money_field():
+    """Computed money value, serialized like stored DecimalFields (a "12.50" string)."""
+    return serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+
+
 class AddCustomerSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         return _validate_unique_for_owner(self, AddCustomer, 'email', value)
@@ -43,7 +48,7 @@ class AddCustomerSerializer(serializers.ModelSerializer):
 
 
 class TableItemsSerializer(serializers.ModelSerializer):
-    amount = serializers.ReadOnlyField()
+    amount = money_field()
     invoice = OwnedPrimaryKeyRelatedField(queryset=Invoice.objects.all(), required=False)
 
     def validate(self, attrs):
@@ -61,9 +66,11 @@ class TableItemsSerializer(serializers.ModelSerializer):
 
 class InvoiceSerializer(serializers.ModelSerializer):
     line_items = TableItemsSerializer(many=True, source='tableitems_set', required=False)
-    sub_total = serializers.ReadOnlyField()
-    discount_amount = serializers.ReadOnlyField()
-    discounted_total_amount = serializers.ReadOnlyField()
+    sub_total = money_field()
+    discount_amount = money_field()
+    discounted_total_amount = money_field()
+    tax_amount = money_field()
+    total = money_field()
     customer_display_name = serializers.CharField(
         source='customer_name.customer_display_name', read_only=True
     )
@@ -78,8 +85,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             'id', 'customer_name', 'customer_display_name', 'invoice_number', 'invoice_date', 'due_date',
-            'subject', 'status', 'line_items', 'sub_total', 'discount_amount',
-            'discounted_total_amount',
+            'subject', 'status', 'discount_percent', 'tax_percent', 'line_items',
+            'sub_total', 'discount_amount', 'discounted_total_amount', 'tax_amount',
+            'total',
         ]
         extra_kwargs = {'invoice_number': {'required': False}}
 
@@ -109,7 +117,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 class ItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Items
-        fields = ['id', 'type', 'name', 'description', 'selling_price', 'tax', 'unit']
+        fields = ['id', 'type', 'name', 'description', 'selling_price', 'tax_rate', 'unit']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
