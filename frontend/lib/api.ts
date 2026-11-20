@@ -82,69 +82,22 @@ export class ApiError extends Error {
   }
 }
 
-const ACCESS = "invoicepro.access";
-const REFRESH = "invoicepro.refresh";
-const USER = "invoicepro.user";
-
-export const tokens = {
-  get access() {
-    return typeof window === "undefined" ? null : localStorage.getItem(ACCESS);
-  },
-  get refresh() {
-    return typeof window === "undefined" ? null : localStorage.getItem(REFRESH);
-  },
-  get username() {
-    return typeof window === "undefined" ? null : localStorage.getItem(USER);
-  },
-  set(access: string, refresh: string, username: string) {
-    localStorage.setItem(ACCESS, access);
-    localStorage.setItem(REFRESH, refresh);
-    localStorage.setItem(USER, username);
-  },
-  clear() {
-    localStorage.removeItem(ACCESS);
-    localStorage.removeItem(REFRESH);
-    localStorage.removeItem(USER);
-  },
-};
-
 /* Called when the session can no longer be refreshed (set by AuthProvider). */
 let onUnauthorized: () => void = () => {};
 export function setUnauthorizedHandler(fn: () => void) {
   onUnauthorized = fn;
 }
 
-async function refreshAccess(): Promise<boolean> {
-  const refresh = tokens.refresh;
-  if (!refresh) return false;
-  const res = await fetch("/api/auth/token/refresh/", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ refresh }),
-  });
-  if (!res.ok) return false;
-  const data = (await res.json()) as { access: string };
-  localStorage.setItem(ACCESS, data.access);
-  return true;
-}
-
-export async function apiFetchRaw(
-  path: string,
-  init: RequestInit = {},
-  retry = true
-): Promise<Response> {
+/* Tokens live in httpOnly cookies managed by the Next.js proxy
+ * (app/api/[...slug]/route.ts), which also refreshes them; the browser only
+ * sends same-origin requests with cookies. */
+export async function apiFetchRaw(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  const access = tokens.access;
-  if (access) headers.set("authorization", `Bearer ${access}`);
-
-  const res = await fetch(`/api${path}`, { ...init, headers });
-  if (res.status === 401 && retry && tokens.refresh) {
-    if (await refreshAccess()) return apiFetchRaw(path, init, false);
-    onUnauthorized();
-  }
+  const res = await fetch(`/api${path}`, { ...init, headers, credentials: "same-origin" });
+  if (res.status === 401) onUnauthorized();
   return res;
 }
 
