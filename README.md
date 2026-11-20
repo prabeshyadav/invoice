@@ -68,7 +68,13 @@ docker compose up -d --build
 ```bash
 docker compose logs -f backend frontend   # follow logs
 docker compose down                       # stop everything
+docker compose run --rm --no-deps backend python manage.py test management   # backend tests
 ```
+
+- `.env` is optional (settings have dev defaults). Copy `.env.example` to `.env`
+  and fill in SMTP credentials to make "Email invoice" work.
+- The frontend runs as a production build; after UI changes run
+  `docker compose up -d --build frontend`.
 
 ### Option B — local virtualenv
 
