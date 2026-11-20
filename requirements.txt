@@ -34,3 +34,16 @@ gunicorn==26.2.0
 # (JWT auth via /api/auth/token/).
 djangorestframework==3.18.3
 djangorestframework-simplejwt==5.5.1
+
+# PostgreSQL driver — used when DATABASE_URL is postgres://
+# (docker-compose.prod.yml `db` service). The [binary] extra ships libpq
+# wheels so the image needs no compiler for it.
+psycopg[binary]==3.3.9
+
+# Parses DATABASE_URL into Django DATABASES — invoice/settings.py.
+# Falls back to SQLite (db.sqlite3) when DATABASE_URL is unset.
+dj-database-url==3.1.2
+
+# Serves collected static files (admin, legacy pages) from gunicorn
+# in production — invoice/settings.py (MIDDLEWARE, STORAGES).
+whitenoise==6.12.0
