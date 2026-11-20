@@ -14,6 +14,10 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
+import dj_database_url
+
+from .env import env_bool, env_list, resolve_secret_key
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,13 +26,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-_0lntjo&0dc%2h@qn)!0%z)$e(anzv2kyqbbc5)qt$r!7_7mg$')
+# Production is the default: local dev sets DEBUG=True (see docker-compose.yml).
+DEBUG = env_bool('DEBUG', False)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't')
+# The insecure built-in key is only accepted when DEBUG is True.
+SECRET_KEY = resolve_secret_key(os.environ.get('SECRET_KEY', ''), DEBUG)
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '*').split(',') if host.strip()]
+# `backend` is the compose service name the Next.js proxy sends as Host.
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend')
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
+
+if not DEBUG:
+    # TLS terminates at the reverse proxy in front of the app. SECURE_SSL_REDIRECT
+    # stays off: the Next.js proxy calls Django over plain HTTP inside the network.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 0))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', False)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 
 # Application definition
@@ -51,6 +68,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
     
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,11 +101,42 @@ WSGI_APPLICATION = 'invoice.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# DATABASE_URL (e.g. postgres://user:pass@db:5432/invoice) wins; otherwise
+# POSTGRES_HOST selects PostgreSQL from separate POSTGRES_* variables, so the
+# password never has to be embedded in a URL (docker-compose.prod.yml uses
+# this); otherwise SQLite.
+_conn_max_age = int(os.environ.get('CONN_MAX_AGE', 60))
+if not os.environ.get('DATABASE_URL') and os.environ.get('POSTGRES_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': os.environ['POSTGRES_HOST'],
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'NAME': os.environ.get('POSTGRES_DB', 'invoice'),
+            'USER': os.environ.get('POSTGRES_USER', 'invoice'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'CONN_MAX_AGE': _conn_max_age,
+            'CONN_HEALTH_CHECKS': True,
+        }
     }
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=_conn_max_age,
+            conn_health_checks=True,
+        )
+    }
+
+# Shared cache so API throttle counters are shared across gunicorn workers.
+# CACHE_URL=redis://redis:6379/1 in production; per-process memory otherwise.
+CACHE_URL = os.environ.get('CACHE_URL', '')
+CACHES = {
+    'default': (
+        {'BACKEND': 'django.core.cache.backends.redis.RedisCache', 'LOCATION': CACHE_URL}
+        if CACHE_URL
+        else {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}
+    )
 }
 
 
@@ -129,6 +178,34 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiiles')
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
+# WhiteNoise serves collected static files from gunicorn in production.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'django.contrib.staticfiles.storage.StaticFilesStorage'
+            if DEBUG
+            # Not the Manifest variant: legacy static/style CSS references a
+            # font that does not exist, which makes manifest hashing fail.
+            else 'whitenoise.storage.CompressedStaticFilesStorage'
+        )
+    },
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': os.environ.get('LOG_LEVEL', 'INFO')},
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
@@ -136,7 +213,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
 
-# Django REST Framework — JWT API served under /api/ alongside HTML views.
+# Django REST Framework — JWT API served under /api/.
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -147,6 +224,26 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # ScopedRateThrottle only applies to views that set throttle_scope
+    # (login and register use 'auth'; see management/auth_views.py).
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.environ.get('THROTTLE_ANON', '200/hour'),
+        'user': os.environ.get('THROTTLE_USER', '5000/hour'),
+        'auth': os.environ.get('THROTTLE_AUTH', '10/min'),
+        # Per username/email on login, password reset and verification resend,
+        # so spoofed client IPs can't bypass brute-force limits.
+        'auth_identifier': os.environ.get('THROTTLE_AUTH_IDENTIFIER', '10/min'),
+    },
+    # Django is only reached through the Next.js proxy, which forwards
+    # X-Forwarded-For. Trust that many entries from the right (1 = the address
+    # Next.js or the TLS reverse proxy in front of it recorded). Add one per
+    # extra proxy that appends to the header (e.g. a CDN in front of nginx).
+    'NUM_PROXIES': int(os.environ.get('TRUSTED_PROXY_COUNT', '1')),
 }
 
 SIMPLE_JWT = {
@@ -179,6 +276,11 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
+
+# Public URL of the Next.js app; links in password-reset and verification emails point here.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:3000').rstrip('/')
+# New accounts stay inactive until the emailed link is opened.
+EMAIL_VERIFICATION_REQUIRED = env_bool('EMAIL_VERIFICATION_REQUIRED', True)
 
 
 

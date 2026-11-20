@@ -1,10 +1,8 @@
 FROM python:3.12-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set work directory
 WORKDIR /app
 
 # Install system dependencies needed for python packages (e.g. cffi, cryptography, pdf tools)
@@ -18,17 +16,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-
-# Copy project code
 COPY . /app/
 
-# Expose port
+# Collect static files into the image for WhiteNoise. DEBUG=False so the
+# compressed production storage is used; the key is a throwaway for this step.
+RUN DEBUG=False SECRET_KEY=collectstatic-build-only-not-a-secret \
+    python manage.py collectstatic --noinput
+
+RUN useradd --create-home --uid 1000 app && chown -R app:app /app
+USER app
+
 EXPOSE 8000
 
-# Run gunicorn server by default
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "invoice.wsgi:application"]
+# Workers/timeout are tunable per environment (PDF rendering can be slow).
+CMD ["sh", "-c", "exec gunicorn invoice.wsgi:application --bind 0.0.0.0:8000 --workers ${GUNICORN_WORKERS:-3} --timeout ${GUNICORN_TIMEOUT:-60} --access-logfile -"]
