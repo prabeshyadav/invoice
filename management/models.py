@@ -1,7 +1,18 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from invoice import commons
 from django.utils.crypto import get_random_string
+
+
+PERCENT_VALIDATORS = [MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))]
+
+
+def money(value):
+    """Round a Decimal to cents, half up (how invoices are conventionally rounded)."""
+    return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 class AddCustomer(models.Model):
@@ -55,6 +66,12 @@ class Invoice(models.Model):
         ('paid', 'Paid'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', blank=True, null=True)
+    discount_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('0'), validators=PERCENT_VALIDATORS
+    )
+    tax_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('0'), validators=PERCENT_VALIDATORS
+    )
 
     class Meta:
         constraints = [
@@ -81,38 +98,44 @@ class Invoice(models.Model):
     @property
     def sub_total(self):
         # .all() reuses prefetch_related('tableitems_set') from list views.
-        return sum(item.amount for item in self.tableitems_set.all())
-    @property
-    def discounted_total_amount(self):
-        discount_percent = 10  # Assuming a discount of 10%, you can replace this with the actual discount value
-        discount = (discount_percent / 100) * self.sub_total
-        return self.sub_total - discount
+        return money(sum((item.amount for item in self.tableitems_set.all()), Decimal('0')))
 
     @property
     def discount_amount(self):
-        d_amount = self.sub_total - self.discounted_total_amount
-        rounded_d_amount = round(d_amount, 3)
-        return rounded_d_amount
-        
-    
+        return money(self.sub_total * self.discount_percent / 100)
+
+    @property
+    def discounted_total_amount(self):
+        """Sub total after discount, before tax (the taxable amount)."""
+        return self.sub_total - self.discount_amount
+
+    @property
+    def tax_amount(self):
+        return money(self.discounted_total_amount * self.tax_percent / 100)
+
+    @property
+    def total(self):
+        return self.discounted_total_amount + self.tax_amount
+
+
 class Items(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='catalog_items')
     type=models.CharField( max_length=50,choices=commons.ITEM_CHOICES,blank=True)
     name=models.CharField( max_length=50)
     description=models.TextField()
-    selling_price=models.IntegerField()
-    tax=models.IntegerField()
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, validators=PERCENT_VALIDATORS)
     unit=models.CharField(max_length=255)
 
 class TableItems(models.Model):
     items_details=models.CharField(max_length=225)
-    quantity=models.IntegerField()
-    rate=models.IntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    rate = models.DecimalField(max_digits=12, decimal_places=2)
     invoice=models.ForeignKey(Invoice,on_delete=models.CASCADE, null=True)
     
     
     @property
     def amount(self):
-        return self.quantity * self.rate
+        return money(self.quantity * self.rate)
 
     

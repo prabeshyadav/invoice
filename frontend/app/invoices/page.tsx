@@ -151,7 +151,7 @@ function InvoicesBody() {
                         <StatusBadge status={status} />
                       </td>
                       <td className={`${td} tabular text-right font-medium`}>
-                        {formatMoney(inv.discounted_total_amount)}
+                        {formatMoney(inv.total)}
                       </td>
                     </tr>
                   );

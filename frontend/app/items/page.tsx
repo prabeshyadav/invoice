@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { RequireAuth } from "@/lib/auth";
-import { ITEM_TYPES, apiErrorMessage, apiFetch, formatMoney, listAll, type CatalogItem } from "@/lib/api";
+import { ITEM_TYPES, apiErrorMessage, apiFetch, formatMoney, formatPercent, listAll, type CatalogItem } from "@/lib/api";
 import Icon from "@/components/Icon";
 import {
   Card,
@@ -18,7 +18,7 @@ import {
   th,
 } from "@/components/ui";
 
-const EMPTY = { type: "Services", name: "", description: "", selling_price: 0, tax: 0, unit: "" };
+const EMPTY = { type: "Services", name: "", description: "", selling_price: 0, tax_rate: 0, unit: "" };
 
 export default function ItemsPage() {
   return (
@@ -101,7 +101,7 @@ function ItemsBody() {
                     <th className={th}>Item</th>
                     <th className={th}>Type</th>
                     <th className={`${th} text-right`}>Price</th>
-                    <th className={`${th} text-right`}>Tax</th>
+                    <th className={`${th} text-right`}>Tax %</th>
                     <th className={th} />
                   </tr>
                 </thead>
@@ -122,7 +122,7 @@ function ItemsBody() {
                         <span className="font-medium">{formatMoney(it.selling_price)}</span>
                         <span className="text-xs text-muted"> / {it.unit}</span>
                       </td>
-                      <td className={`${td} tabular text-right text-muted`}>{it.tax}</td>
+                      <td className={`${td} tabular text-right text-muted`}>{formatPercent(it.tax_rate)}</td>
                       <td className={`${td} w-12 text-right`}>
                         <button
                           type="button"
@@ -170,6 +170,7 @@ function ItemsBody() {
                   className={`${inputCls} tabular`}
                   type="number"
                   min={0}
+                  step="0.01"
                   value={form.selling_price}
                   onChange={(e) => set("selling_price", Number(e.target.value) || 0)}
                   required
@@ -191,13 +192,15 @@ function ItemsBody() {
                 </datalist>
               </Field>
             </div>
-            <Field label="Tax" required>
+            <Field label="Tax %" required>
               <input
                 className={`${inputCls} tabular`}
                 type="number"
                 min={0}
-                value={form.tax}
-                onChange={(e) => set("tax", Number(e.target.value) || 0)}
+                max={100}
+                step="0.01"
+                value={form.tax_rate}
+                onChange={(e) => set("tax_rate", Number(e.target.value) || 0)}
                 required
               />
             </Field>
