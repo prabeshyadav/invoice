@@ -1,7 +1,6 @@
 """REST API (JWT) under /api/. Every queryset is scoped to request.user."""
 
-from django.core.mail import EmailMessage
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
@@ -13,9 +12,11 @@ from .serializers import (
     InvoiceSerializer,
     ItemsSerializer,
     RegisterSerializer,
+    SendEmailSerializer,
     TableItemsSerializer,
 )
 from .pdf import render_to_pdf
+from .tasks import send_invoice_email
 
 
 class RegisterView(CreateAPIView):
@@ -78,23 +79,19 @@ class InvoiceViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def send_email(self, request, pk=None):
         invoice = self.get_object()
-        to_email = request.data.get('to', invoice.customer_name.email)
-        subject = request.data.get('subject', f'Invoice {invoice.invoice_number}')
-        message = request.data.get(
-            'message',
+        params = SendEmailSerializer(data=request.data)
+        params.is_valid(raise_exception=True)
+        to_email = params.validated_data.get('to') or invoice.customer_name.email
+        subject = params.validated_data.get('subject') or f'Invoice {invoice.invoice_number}'
+        message = params.validated_data.get('message') or (
             f'Please find attached invoice {invoice.invoice_number} '
-            f'due on {invoice.due_date}.',
+            f'due on {invoice.due_date}.'
         )
-        email = EmailMessage(subject, message, None, [to_email])
-        pdf_response = render_to_pdf('invoice_pdf.html', self._pdf_context(invoice))
-        if pdf_response is not None:
-            email.attach(
-                f'invoice-{invoice.invoice_number}.pdf',
-                pdf_response.content,
-                'application/pdf',
-            )
-        email.send()
-        return Response({'detail': f'Invoice sent to {to_email}.'})
+        # PDF rendering and SMTP are slow; the worker does them.
+        send_invoice_email.delay(invoice.id, to_email, subject, message)
+        return Response(
+            {'detail': f'Sending invoice to {to_email}…'}, status=status.HTTP_202_ACCEPTED
+        )
 
 
 class TableItemsViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
