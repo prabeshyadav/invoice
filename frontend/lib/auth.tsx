@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, setUnauthorizedHandler, tokens } from "./api";
+import { ApiError, setUnauthorizedHandler } from "./api";
 
 interface AuthState {
   ready: boolean;
@@ -39,23 +39,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
 
   const logout = useCallback(() => {
-    tokens.clear();
+    // Cookies are httpOnly, so only the server can clear them.
+    fetch("/api/session/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
     setUsername(null);
     router.replace("/login");
   }, [router]);
 
   useEffect(() => {
-    // localStorage is only readable after mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUsername(tokens.access ? tokens.username : null);
-    setReady(true);
     setUnauthorizedHandler(logout);
+    // Tokens used to live in localStorage; drop any left from older builds.
+    for (const key of ["invoicepro.access", "invoicepro.refresh", "invoicepro.user"]) {
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+    }
+    fetch("/api/session", { credentials: "same-origin" })
+      .then((res) => res.json() as Promise<{ authenticated: boolean; username: string | null }>)
+      .then((s) => setUsername(s.authenticated ? s.username : null))
+      .catch(() => setUsername(null))
+      .finally(() => setReady(true));
   }, [logout]);
 
   const login = useCallback(async (user: string, password: string) => {
-    const data = await post("/auth/token/", { username: user, password });
-    tokens.set(data.access, data.refresh, user);
-    setUsername(user);
+    // Sets httpOnly session cookies; no token is returned to the browser.
+    const data = await post("/session/login", { username: user, password });
+    setUsername(data.username);
   }, []);
 
   const register = useCallback(
