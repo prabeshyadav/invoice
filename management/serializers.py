@@ -5,7 +5,33 @@ from .models import AddCustomer, Invoice, Items, TableItems
 from .utils import new_invoice_number
 
 
+def _validate_unique_for_owner(serializer, model, field, value):
+    """Per-owner uniqueness (the DB constraint is on owner + field)."""
+    others = model.objects.filter(owner=serializer.context['request'].user, **{field: value})
+    if serializer.instance is not None:
+        others = others.exclude(pk=serializer.instance.pk)
+    if others.exists():
+        raise serializers.ValidationError(
+            f'You already have a {model._meta.verbose_name} with this {field.replace("_", " ")}.'
+        )
+    return value
+
+
+class OwnedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
+    """Accepts only objects owned by the requesting user; others look nonexistent."""
+
+    def __init__(self, owner_lookup='owner', **kwargs):
+        self.owner_lookup = owner_lookup
+        super().__init__(**kwargs)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(**{self.owner_lookup: self.context['request'].user})
+
+
 class AddCustomerSerializer(serializers.ModelSerializer):
+    def validate_email(self, value):
+        return _validate_unique_for_owner(self, AddCustomer, 'email', value)
+
     class Meta:
         model = AddCustomer
         fields = [
@@ -18,6 +44,14 @@ class AddCustomerSerializer(serializers.ModelSerializer):
 
 class TableItemsSerializer(serializers.ModelSerializer):
     amount = serializers.ReadOnlyField()
+    invoice = OwnedPrimaryKeyRelatedField(queryset=Invoice.objects.all(), required=False)
+
+    def validate(self, attrs):
+        # Nested under an invoice, the parent supplies it. Standalone it is required,
+        # otherwise the row would have no owner and be invisible to everyone.
+        if self.root is self and self.instance is None and not attrs.get('invoice'):
+            raise serializers.ValidationError({'invoice': 'This field is required.'})
+        return attrs
 
     class Meta:
         model = TableItems
@@ -33,6 +67,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
     customer_display_name = serializers.CharField(
         source='customer_name.customer_display_name', read_only=True
     )
+    customer_name = OwnedPrimaryKeyRelatedField(queryset=AddCustomer.objects.all())
+
+    def validate_invoice_number(self, value):
+        if not value:
+            return value
+        return _validate_unique_for_owner(self, Invoice, 'invoice_number', value)
 
     class Meta:
         model = Invoice
@@ -46,9 +86,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop('tableitems_set', [])
         if not validated_data.get('invoice_number'):
-            validated_data['invoice_number'] = new_invoice_number()
+            validated_data['invoice_number'] = new_invoice_number(validated_data['owner'])
         invoice = Invoice.objects.create(**validated_data)
         for item_data in items_data:
+            item_data.pop('invoice', None)
             TableItems.objects.create(invoice=invoice, **item_data)
         return invoice
 
@@ -60,6 +101,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         if items_data is not None:
             instance.tableitems_set.all().delete()
             for item_data in items_data:
+                item_data.pop('invoice', None)
                 TableItems.objects.create(invoice=instance, **item_data)
         return instance
 

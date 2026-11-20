@@ -1,4 +1,4 @@
-"""REST API (JWT) served alongside the existing HTML views under /api/."""
+"""REST API (JWT) under /api/. Every queryset is scoped to request.user."""
 
 from django.core.mail import EmailMessage
 from rest_framework import permissions, viewsets
@@ -15,7 +15,7 @@ from .serializers import (
     RegisterSerializer,
     TableItemsSerializer,
 )
-from .views import render_to_pdf
+from .pdf import render_to_pdf
 
 
 class RegisterView(CreateAPIView):
@@ -23,12 +23,27 @@ class RegisterView(CreateAPIView):
     serializer_class = RegisterSerializer
 
 
-class AddCustomerViewSet(viewsets.ModelViewSet):
+class OwnedViewSetMixin:
+    """Scope every query to request.user and stamp new rows with it.
+
+    Objects owned by someone else are simply not in the queryset, so detail
+    routes return 404 for them rather than revealing that they exist.
+    """
+    owner_lookup = 'owner'
+
+    def get_queryset(self):
+        return super().get_queryset().filter(**{self.owner_lookup: self.request.user})
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class AddCustomerViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
     queryset = AddCustomer.objects.all().order_by('-id')
     serializer_class = AddCustomerSerializer
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
     queryset = (
         Invoice.objects.select_related('customer_name')
         .prefetch_related('tableitems_set')
@@ -82,18 +97,24 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return Response({'detail': f'Invoice sent to {to_email}.'})
 
 
-class TableItemsViewSet(viewsets.ModelViewSet):
+class TableItemsViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
+    queryset = TableItems.objects.select_related('invoice').order_by('-id')
     serializer_class = TableItemsSerializer
+    owner_lookup = 'invoice__owner'
+
+    def perform_create(self, serializer):
+        # Ownership comes from the invoice, which the serializer restricts to request.user.
+        serializer.save()
 
     def get_queryset(self):
-        queryset = TableItems.objects.select_related('invoice').order_by('-id')
+        queryset = super().get_queryset()
         invoice_id = self.request.query_params.get('invoice')
         if invoice_id:
             queryset = queryset.filter(invoice_id=invoice_id)
         return queryset
 
 
-class ItemsViewSet(viewsets.ModelViewSet):
+class ItemsViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
     queryset = Items.objects.all().order_by('-id')
     serializer_class = ItemsSerializer
 
