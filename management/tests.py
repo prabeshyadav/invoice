@@ -1,6 +1,9 @@
+import importlib
 from datetime import date, timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
@@ -47,8 +50,11 @@ class InvoiceApiTests(TestCase):
         }, format='json')
         self.assertEqual(res.status_code, 201, res.data)
         self.assertEqual(res.data['invoice_number'], 'KIT-101')
-        self.assertEqual(res.data['sub_total'], 100)
-        self.assertEqual(res.data['discounted_total_amount'], 90)
+        # New invoices have no discount or tax unless set.
+        self.assertEqual(res.data['sub_total'], '100.00')
+        self.assertEqual(res.data['discount_amount'], '0.00')
+        self.assertEqual(res.data['tax_amount'], '0.00')
+        self.assertEqual(res.data['total'], '100.00')
         self.assertEqual(res.data['customer_display_name'], 'Customer 1')
 
     def test_filter_by_customer(self):
@@ -66,7 +72,64 @@ class InvoiceApiTests(TestCase):
         with self.assertNumQueries(3):
             res = self.client.get('/api/invoices/')
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data['results'][0]['sub_total'], 50)
+        self.assertEqual(res.data['results'][0]['sub_total'], '50.00')
+
+
+class MoneyTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(User.objects.create_user('u', password='pass12345'))
+        self.customer = make_customer()
+
+    def _create(self, **extra):
+        payload = {
+            'customer_name': self.customer.id, 'invoice_date': '2026-01-01',
+            'due_date': '2026-01-31', 'subject': 'Work',
+            'line_items': [
+                {'items_details': 'Consulting', 'quantity': '1.5', 'rate': '10.25'},
+                {'items_details': 'Design', 'quantity': '3', 'rate': '33.33'},
+            ],
+            **extra,
+        }
+        return self.client.post('/api/invoices/', payload, format='json')
+
+    def test_decimal_line_items_round_half_up(self):
+        res = self._create()
+        self.assertEqual(res.status_code, 201, res.data)
+        amounts = [line['amount'] for line in res.data['line_items']]
+        self.assertEqual(amounts, ['15.38', '99.99'])  # 1.5 x 10.25 = 15.375
+        self.assertEqual(res.data['line_items'][0]['quantity'], '1.50')
+        self.assertEqual(res.data['sub_total'], '115.37')
+
+    def test_discount_then_tax(self):
+        res = self._create(discount_percent='12.5', tax_percent='13')
+        self.assertEqual(res.status_code, 201, res.data)
+        # 115.37 - 14.42 (12.5%, from 14.42125) = 100.95; 13% tax = 13.12 (from 13.1235)
+        self.assertEqual(res.data['discount_amount'], '14.42')
+        self.assertEqual(res.data['discounted_total_amount'], '100.95')
+        self.assertEqual(res.data['tax_amount'], '13.12')
+        self.assertEqual(res.data['total'], '114.07')
+
+    def test_percent_must_be_between_0_and_100(self):
+        res = self._create(discount_percent='150')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('discount_percent', res.data)
+
+    def test_catalog_item_decimal_price_and_tax_rate(self):
+        res = self.client.post('/api/items/', {
+            'type': 'Services', 'name': 'Hour', 'description': 'Hourly work',
+            'selling_price': '2500.50', 'tax_rate': '13', 'unit': 'hour',
+        }, format='json')
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertEqual((res.data['selling_price'], res.data['tax_rate']), ('2500.50', '13.00'))
+
+    def test_migration_keeps_legacy_10_percent_discount(self):
+        migration = importlib.import_module('management.migrations.0022_decimal_money_tax_discount')
+        invoice = make_invoice(self.customer, 'KIT-101')
+        migration.keep_legacy_discount(django_apps, None)
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.discount_percent, Decimal('10'))
+        self.assertEqual(invoice.total, Decimal('90.00'))
 
 
 class DueDateReminderTests(TestCase):
