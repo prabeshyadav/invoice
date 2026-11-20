@@ -30,11 +30,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
     sub_total = serializers.ReadOnlyField()
     discount_amount = serializers.ReadOnlyField()
     discounted_total_amount = serializers.ReadOnlyField()
+    customer_display_name = serializers.CharField(
+        source='customer_name.customer_display_name', read_only=True
+    )
 
     class Meta:
         model = Invoice
         fields = [
-            'id', 'customer_name', 'invoice_number', 'invoice_date', 'due_date',
+            'id', 'customer_name', 'customer_display_name', 'invoice_number', 'invoice_date', 'due_date',
             'subject', 'status', 'line_items', 'sub_total', 'discount_amount',
             'discounted_total_amount',
         ]
