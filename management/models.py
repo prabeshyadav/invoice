@@ -67,14 +67,8 @@ class Invoice(models.Model):
     
     @property
     def sub_total(self):
-        items = TableItems.objects.filter(invoice=self)
-        
-        total =0
-        for item in items:
-            total = total+ item.amount
-
-            
-        return total
+        # .all() reuses prefetch_related('tableitems_set') from list views.
+        return sum(item.amount for item in self.tableitems_set.all())
     @property
     def discounted_total_amount(self):
         discount_percent = 10  # Assuming a discount of 10%, you can replace this with the actual discount value
