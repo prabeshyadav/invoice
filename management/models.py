@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from invoice import commons
 from django.utils.crypto import get_random_string
@@ -5,7 +6,8 @@ from django.utils.crypto import get_random_string
 
 class AddCustomer(models.Model):
     """for handling customer details"""
-    
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customers')
     customer_type = models.CharField(max_length=255, choices=commons.CUSTOMER_CHOICES, blank=True)
     primary_contact=models.CharField(max_length=255,choices=commons.SALUTATION_CHOICES)
     first_name=models.CharField(max_length=225)
@@ -16,7 +18,7 @@ class AddCustomer(models.Model):
     
     currency=models.CharField(max_length=255,choices=commons.CURRENCY_CHOICES)
     individual_name = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     phone = models.CharField(max_length=15)
     website = models.CharField(max_length=255, blank=True)
     mobile=models.CharField(max_length=255)
@@ -33,10 +35,16 @@ class AddCustomer(models.Model):
     
     def __str__(self):
         return self.fullname()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'email'], name='unique_customer_email_per_owner'),
+        ]
     
 class Invoice(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invoices')
     customer_name=models.ForeignKey( AddCustomer,on_delete=models.CASCADE, related_name="invoices")
-    invoice_number=models.CharField(max_length=25,unique=True)
+    invoice_number=models.CharField(max_length=25)
     
     invoice_date=models.DateField()
     due_date=models.DateField()
@@ -47,6 +55,11 @@ class Invoice(models.Model):
         ('paid', 'Paid'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'invoice_number'], name='unique_invoice_number_per_owner'),
+        ]
     # def __str__(self):
     #     return f"Invoice of id {self.id}"
     
@@ -83,6 +96,7 @@ class Invoice(models.Model):
         
     
 class Items(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='catalog_items')
     type=models.CharField( max_length=50,choices=commons.ITEM_CHOICES,blank=True)
     name=models.CharField( max_length=50)
     description=models.TextField()

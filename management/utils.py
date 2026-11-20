@@ -1,10 +1,10 @@
 from .models import Invoice
 from django.core.exceptions import ObjectDoesNotExist
 
-def new_invoice_number():
-    """returns new invoice number by adding numbers to the last invoice number"""
+def new_invoice_number(owner):
+    """returns the owner's next invoice number by adding 1 to their last one"""
     try:
-        latest_invoice_number = Invoice.objects.filter(invoice_number__startswith="KIT").latest('id').invoice_number    #fetches latest invoice_number starting with "KIT"
+        latest_invoice_number = Invoice.objects.filter(owner=owner, invoice_number__startswith="KIT").latest('id').invoice_number    #fetches latest invoice_number starting with "KIT"
         invoice_number_part = latest_invoice_number.split('-')[1]   #returns like this 101 in string
         int_invoice_number = int(invoice_number_part)   # 101 in int
         increment_number = int_invoice_number + 1  #adds 1 to above ex: 102 in int
