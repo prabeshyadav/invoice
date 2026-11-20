@@ -12,7 +12,9 @@ x-django: &django
       required: true
   environment:
     DEBUG: "False"
-    DATABASE_URL: postgres://${POSTGRES_USER:-invoice}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-invoice}
+    # Credentials (POSTGRES_USER/DB and the password) come from .env only, so
+    # no secret-looking value is ever written in this file.
+    POSTGRES_HOST: db
     CELERY_BROKER_URL: redis://redis:6379/0
     CACHE_URL: redis://redis:6379/1
 
@@ -20,10 +22,12 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-invoice}
       POSTGRES_USER: ${POSTGRES_USER:-invoice}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
