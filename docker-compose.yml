@@ -13,6 +13,11 @@ services:
       # Optional: settings.py has dev defaults; copy .env.example to override.
       - path: .env
         required: false
+    environment:
+      # settings.py defaults to production (DEBUG off); this file is dev only.
+      - DEBUG=True
+      # Dev prints emails (verification/reset links) to `docker compose logs`.
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
     depends_on:
       - redis
 
@@ -41,6 +46,9 @@ services:
       # Optional: settings.py has dev defaults; copy .env.example to override.
       - path: .env
         required: false
+    environment:
+      - DEBUG=True
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
     depends_on:
       - redis
 
@@ -53,5 +61,8 @@ services:
       # Optional: settings.py has dev defaults; copy .env.example to override.
       - path: .env
         required: false
+    environment:
+      - DEBUG=True
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
     depends_on:
       - redis

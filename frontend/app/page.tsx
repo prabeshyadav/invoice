@@ -10,7 +10,6 @@ import {
   displayStatus,
   formatDate,
   formatMoney,
-  listAll,
   type Invoice,
 } from "@/lib/api";
 import Icon from "@/components/Icon";
@@ -49,42 +48,51 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
+type DashboardInvoice = Pick<
+  Invoice,
+  "id" | "customer_name" | "customer_display_name" | "invoice_number" | "invoice_date" | "due_date" | "subject" | "status" | "total"
+>;
+
+/* GET /api/dashboard/: totals are computed server-side; money values are "12.50" strings. */
+interface DashboardData {
+  invoice_count: number;
+  customer_count: number;
+  totals: { billed: string; collected: string; outstanding: string; overdue: string };
+  by_status: Record<string, { count: number; amount: string }>;
+  recent: DashboardInvoice[];
+  upcoming: DashboardInvoice[];
+}
+
 function DashboardBody() {
   const { username } = useAuth();
   const router = useRouter();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [customerCount, setCustomerCount] = useState(0);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([apiFetch<{ count: number }>("/customers/"), listAll<Invoice>("/invoices/")])
-      .then(([c, inv]) => {
-        setCustomerCount(c.count);
-        setInvoices(inv);
-      })
+    apiFetch<DashboardData>("/dashboard/")
+      .then(setData)
       .catch((e) => setError(apiErrorMessage(e)))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner />;
+  if (!data) return <ErrorBanner message={error ?? "Could not load the dashboard."} />;
 
-  const sum = (xs: Invoice[]) => xs.reduce((s, i) => s + Number(i.discounted_total_amount), 0);
-  const byStatus = (s: string) => invoices.filter((i) => displayStatus(i) === s);
-  const paid = byStatus("paid");
-  const overdue = byStatus("overdue");
-  const unpaid = invoices.filter((i) => i.status !== "paid");
-  const total = sum(invoices);
+  const invoiceCount = data.invoice_count;
+  const paidCount = data.by_status.paid?.count ?? 0;
+  const overdueCount = data.by_status.overdue?.count ?? 0;
+  const unpaidCount = invoiceCount - paidCount;
+  const total = Number(data.totals.billed);
 
-  const breakdown = ["paid", "sent", "draft", "overdue"].map((s) => {
-    const xs = byStatus(s);
-    return { status: s, count: xs.length, amount: sum(xs) };
-  });
+  const breakdown = ["paid", "sent", "draft", "overdue"].map((s) => ({
+    status: s,
+    count: data.by_status[s]?.count ?? 0,
+    amount: Number(data.by_status[s]?.amount ?? 0),
+  }));
 
-  const upcoming = unpaid
-    .filter((i) => displayStatus(i) !== "overdue")
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    .slice(0, 5);
+  const upcoming = data.upcoming;
 
   return (
     <>
@@ -111,33 +119,33 @@ function DashboardBody() {
           label="Total billed"
           value={formatMoney(total)}
           icon="payments"
-          hint={`${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`}
+          hint={`${invoiceCount} invoice${invoiceCount === 1 ? "" : "s"}`}
           href="/invoices"
         />
         <StatCard
           label="Collected"
-          value={formatMoney(sum(paid))}
+          value={formatMoney(data.totals.collected)}
           icon="check_circle"
           tone="success"
-          hint={`${paid.length} paid`}
+          hint={`${paidCount} paid`}
         />
         <StatCard
           label="Outstanding"
-          value={formatMoney(sum(unpaid))}
+          value={formatMoney(data.totals.outstanding)}
           icon="schedule"
           tone="warning"
-          hint={`${unpaid.length} unpaid`}
+          hint={`${unpaidCount} unpaid`}
         />
         <StatCard
           label="Overdue"
-          value={formatMoney(sum(overdue))}
+          value={formatMoney(data.totals.overdue)}
           icon="warning"
           tone="danger"
-          hint={`${overdue.length} past due · ${customerCount} customers`}
+          hint={`${overdueCount} past due · ${data.customer_count} customers`}
         />
       </div>
 
-      {invoices.length === 0 ? (
+      {invoiceCount === 0 ? (
         <Card className="mt-6">
           <EmptyState
             icon="receipt_long"
@@ -204,7 +212,7 @@ function DashboardBody() {
                     </tr>
                   </thead>
                   <tbody>
-                    {invoices.slice(0, 6).map((inv) => (
+                    {data.recent.map((inv) => (
                       <tr key={inv.id} className={trLink} onClick={() => router.push(`/invoices/${inv.id}`)}>
                         <td className={td}>
                           <Link href={`/invoices/${inv.id}`} className="font-medium text-ink hover:text-accent">
@@ -217,7 +225,7 @@ function DashboardBody() {
                           <StatusBadge status={displayStatus(inv)} />
                         </td>
                         <td className={`${td} tabular text-right font-medium`}>
-                          {formatMoney(inv.discounted_total_amount)}
+                          {formatMoney(inv.total)}
                         </td>
                       </tr>
                     ))}
@@ -244,7 +252,7 @@ function DashboardBody() {
                           </p>
                         </div>
                         <span className="tabular text-sm font-medium">
-                          {formatMoney(inv.discounted_total_amount)}
+                          {formatMoney(inv.total)}
                         </span>
                       </Link>
                     </li>
