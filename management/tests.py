@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from django.db import IntegrityError
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.utils.module_loading import import_string
@@ -19,6 +20,7 @@ from invoice.env import resolve_secret_key
 
 from . import tasks
 from .models import AddCustomer, Invoice, Items, TableItems
+from .utils import new_invoice_number
 
 
 def default_owner():
@@ -343,3 +345,50 @@ class ProductionReadinessTests(TestCase):
             resolve_secret_key('django-insecure-abc', debug=False)
         self.assertEqual(resolve_secret_key('s3cret-value', debug=False), 's3cret-value')
         self.assertTrue(resolve_secret_key('', debug=True).startswith('django-insecure'))
+
+
+class InvoiceNumberingTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.customer = make_customer(owner=self.owner)
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def _post(self, **extra):
+        return self.client.post('/api/invoices/', {
+            'customer_name': self.customer.id, 'invoice_date': '2026-01-01',
+            'due_date': '2026-01-31', 'subject': 'Work', **extra,
+        }, format='json')
+
+    def test_starts_at_kit_101(self):
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-101')
+
+    def test_uses_highest_suffix_not_latest_row(self):
+        make_invoice(self.customer, 'KIT-150')
+        make_invoice(self.customer, 'KIT-99')      # created later, lower number
+        make_invoice(self.customer, 'INV-2026-7')  # manual, non-KIT
+        make_invoice(self.customer, 'KIT-abc')     # manual, non-numeric suffix
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-151')
+
+    def test_numeric_not_string_ordering(self):
+        make_invoice(self.customer, 'KIT-999')
+        make_invoice(self.customer, 'KIT-1000')
+        # String ordering would pick KIT-999; numeric ordering must not.
+        self.assertEqual(new_invoice_number(self.owner), 'KIT-1001')
+
+    def test_sequential_api_creates_are_per_owner(self):
+        numbers = [self._post().data['invoice_number'] for _ in range(3)]
+        self.assertEqual(numbers, ['KIT-101', 'KIT-102', 'KIT-103'])
+        other = User.objects.create_user('other')
+        make_customer(9, owner=other)
+        self.assertEqual(new_invoice_number(other), 'KIT-101')
+
+    def test_integrity_error_on_create_is_a_400(self):
+        with patch('management.serializers.Invoice.objects.create', side_effect=IntegrityError('dup')):
+            res = self._post()
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('invoice_number', res.data)
+
+
+#END
+#END
