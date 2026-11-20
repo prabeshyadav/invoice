@@ -114,3 +114,53 @@ class DueDateReminderTests(TestCase):
     def test_beat_schedule_points_at_registered_tasks(self):
         for entry in settings.CELERY_BEAT_SCHEDULE.values():
             self.assertTrue(callable(import_string(entry['task'])), entry['task'])
+
+
+# Imported here (not at the top) to keep this block self-contained for merges.
+from django.core.cache import cache  # noqa: E402
+from django.core.exceptions import ImproperlyConfigured  # noqa: E402
+from rest_framework.throttling import SimpleRateThrottle  # noqa: E402
+
+from invoice.env import resolve_secret_key  # noqa: E402
+
+
+class ProductionReadinessTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_health_is_public_and_reports_ok(self):
+        res = APIClient().get('/api/health/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {'status': 'ok'})
+
+    def test_login_is_throttled(self):
+        User.objects.create_user('u', password='pass12345')
+        client = APIClient()
+        body = {'username': 'u', 'password': 'wrong-password'}
+        # THROTTLE_RATES is read once at import; patch the shared dict.
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '2/min'}):
+            codes = [client.post('/api/auth/token/', body, format='json').status_code for _ in range(3)]
+        self.assertEqual(codes, [401, 401, 429])
+
+    def test_register_is_throttled(self):
+        client = APIClient()
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '1/min'}):
+            first = client.post('/api/auth/register/', {
+                'username': 'new', 'email': 'n@example.com', 'password': 'pass12345',
+            }, format='json')
+            second = client.post('/api/auth/register/', {
+                'username': 'new2', 'email': 'n2@example.com', 'password': 'pass12345',
+            }, format='json')
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 429)
+
+    def test_secret_key_guard(self):
+        with self.assertRaises(ImproperlyConfigured):
+            resolve_secret_key('', debug=False)
+        with self.assertRaises(ImproperlyConfigured):
+            resolve_secret_key('django-insecure-abc', debug=False)
+        self.assertEqual(resolve_secret_key('s3cret-value', debug=False), 's3cret-value')
+        self.assertTrue(resolve_secret_key('', debug=True).startswith('django-insecure'))
