@@ -101,14 +101,32 @@ WSGI_APPLICATION = 'invoice.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# DATABASE_URL (e.g. postgres://user:pass@db:5432/invoice); SQLite when unset.
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=int(os.environ.get('CONN_MAX_AGE', 60)),
-        conn_health_checks=True,
-    )
-}
+# DATABASE_URL (e.g. postgres://user:pass@db:5432/invoice) wins; otherwise
+# POSTGRES_HOST selects PostgreSQL from separate POSTGRES_* variables, so the
+# password never has to be embedded in a URL (docker-compose.prod.yml uses
+# this); otherwise SQLite.
+_conn_max_age = int(os.environ.get('CONN_MAX_AGE', 60))
+if not os.environ.get('DATABASE_URL') and os.environ.get('POSTGRES_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': os.environ['POSTGRES_HOST'],
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'NAME': os.environ.get('POSTGRES_DB', 'invoice'),
+            'USER': os.environ.get('POSTGRES_USER', 'invoice'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'CONN_MAX_AGE': _conn_max_age,
+            'CONN_HEALTH_CHECKS': True,
+        }
+    }
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=_conn_max_age,
+            conn_health_checks=True,
+        )
+    }
 
 # Shared cache so API throttle counters are shared across gunicorn workers.
 # CACHE_URL=redis://redis:6379/1 in production; per-process memory otherwise.
