@@ -1,29 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import InvoiceForm, {
-  type InvoicePayload,
-} from "@/components/InvoiceForm";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import InvoiceForm, { type InvoicePayload } from "@/components/InvoiceForm";
 import { RequireAuth } from "@/lib/auth";
-import {
-  apiErrorMessage,
-  apiFetch,
-  listAll,
-  type Customer,
-} from "@/lib/api";
-import { ErrorBanner, PageTitle, Spinner } from "@/components/ui";
+import { apiErrorMessage, apiFetch, listAll, type Customer } from "@/lib/api";
+import { ErrorBanner, PageHeader, Spinner } from "@/components/ui";
 
 export default function NewInvoicePage() {
   return (
     <RequireAuth>
-      <NewInvoiceBody />
+      <Suspense fallback={<Spinner />}>
+        <NewInvoiceBody />
+      </Suspense>
     </RequireAuth>
   );
 }
 
 function NewInvoiceBody() {
   const router = useRouter();
+  const preselected = Number(useSearchParams().get("customer")) || undefined;
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,24 +41,25 @@ function NewInvoiceBody() {
       router.replace(`/invoices/${created.id}`);
     } catch (e) {
       setError(apiErrorMessage(e));
-    } finally {
       setBusy(false);
     }
   }
 
   if (!customers && !error) return <Spinner />;
   return (
-    <div className="max-w-3xl">
-      <PageTitle title="New invoice" />
+    <>
+      <PageHeader back={{ href: "/invoices", label: "Invoices" }} title="New invoice" />
       <ErrorBanner message={error} />
       {customers && (
         <InvoiceForm
           customers={customers}
+          defaultCustomerId={preselected}
           onSubmit={onSubmit}
           busy={busy}
           submitLabel="Create invoice"
+          cancelHref="/invoices"
         />
       )}
-    </div>
+    </>
   );
 }

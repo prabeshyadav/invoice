@@ -2,18 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import InvoiceForm, {
-  type InvoicePayload,
-} from "@/components/InvoiceForm";
+import InvoiceForm, { type InvoicePayload } from "@/components/InvoiceForm";
 import { RequireAuth } from "@/lib/auth";
-import {
-  apiErrorMessage,
-  apiFetch,
-  listAll,
-  type Customer,
-  type Invoice,
-} from "@/lib/api";
-import { ErrorBanner, PageTitle, Spinner } from "@/components/ui";
+import { apiErrorMessage, apiFetch, listAll, type Customer, type Invoice } from "@/lib/api";
+import { ErrorBanner, PageHeader, Spinner } from "@/components/ui";
 
 export default function EditInvoicePage() {
   return (
@@ -26,8 +18,7 @@ export default function EditInvoicePage() {
 }
 
 function EditInvoiceBody() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -35,40 +26,33 @@ function EditInvoiceBody() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [c, inv] = await Promise.all([
-          listAll<Customer>("/customers/"),
-          apiFetch<Invoice>(`/invoices/${id}/`),
-        ]);
+    Promise.all([listAll<Customer>("/customers/"), apiFetch<Invoice>(`/invoices/${id}/`)])
+      .then(([c, inv]) => {
         setCustomers(c);
         setInvoice(inv);
-      } catch (e) {
-        setError(apiErrorMessage(e));
-      }
-    })();
+      })
+      .catch((e) => setError(apiErrorMessage(e)));
   }, [id]);
 
   async function onSubmit(payload: InvoicePayload) {
     setError(null);
     setBusy(true);
     try {
-      await apiFetch(`/invoices/${id}/`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
+      await apiFetch(`/invoices/${id}/`, { method: "PATCH", body: JSON.stringify(payload) });
       router.replace(`/invoices/${id}`);
     } catch (e) {
       setError(apiErrorMessage(e));
-    } finally {
       setBusy(false);
     }
   }
 
   if (!invoice && !error) return <Spinner />;
   return (
-    <div className="max-w-3xl">
-      <PageTitle title={`Edit ${invoice?.invoice_number ?? "invoice"}`} />
+    <>
+      <PageHeader
+        back={{ href: `/invoices/${id}`, label: invoice?.invoice_number ?? "Invoice" }}
+        title={`Edit ${invoice?.invoice_number ?? "invoice"}`}
+      />
       <ErrorBanner message={error} />
       {invoice && (
         <InvoiceForm
@@ -77,8 +61,9 @@ function EditInvoiceBody() {
           onSubmit={onSubmit}
           busy={busy}
           submitLabel="Save changes"
+          cancelHref={`/invoices/${id}`}
         />
       )}
-    </div>
+    </>
   );
 }
