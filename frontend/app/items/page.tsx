@@ -2,31 +2,23 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { RequireAuth } from "@/lib/auth";
+import { ITEM_TYPES, apiErrorMessage, apiFetch, formatMoney, listAll, type CatalogItem } from "@/lib/api";
+import Icon from "@/components/Icon";
 import {
-  ITEM_TYPES,
-  apiErrorMessage,
-  apiFetch,
-  listAll,
-  type CatalogItem,
-} from "@/lib/api";
-import {
+  Card,
+  EmptyState,
   ErrorBanner,
   Field,
-  PageTitle,
+  PageHeader,
+  SearchInput,
   Spinner,
-  btnDanger,
   btnPrimary,
   inputCls,
+  td,
+  th,
 } from "@/components/ui";
 
-const EMPTY = {
-  type: "",
-  name: "",
-  description: "",
-  selling_price: 0,
-  tax: 0,
-  unit: "",
-};
+const EMPTY = { type: "Services", name: "", description: "", selling_price: 0, tax: 0, unit: "" };
 
 export default function ItemsPage() {
   return (
@@ -42,16 +34,7 @@ function ItemsBody() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  async function reload() {
-    try {
-      setItems(await listAll<CatalogItem>("/items/"));
-    } catch (e) {
-      setError(apiErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     listAll<CatalogItem>("/items/")
@@ -60,14 +43,16 @@ function ItemsBody() {
       .finally(() => setLoading(false));
   }, []);
 
+  const set = <K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) => setForm((f) => ({ ...f, [k]: v }));
+
   async function onCreate(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await apiFetch("/items/", { method: "POST", body: JSON.stringify(form) });
+      const created = await apiFetch<CatalogItem>("/items/", { method: "POST", body: JSON.stringify(form) });
+      setItems((xs) => [created, ...xs]);
       setForm(EMPTY);
-      await reload();
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -75,122 +60,154 @@ function ItemsBody() {
     }
   }
 
-  async function onDelete(id: number) {
-    if (!confirm("Delete this item?")) return;
+  async function onDelete(item: CatalogItem) {
+    if (!confirm(`Delete "${item.name}" from the catalog?`)) return;
     try {
-      await apiFetch(`/items/${id}/`, { method: "DELETE" });
-      setItems((xs) => xs.filter((x) => x.id !== id));
+      await apiFetch(`/items/${item.id}/`, { method: "DELETE" });
+      setItems((xs) => xs.filter((x) => x.id !== item.id));
     } catch (e) {
       setError(apiErrorMessage(e));
     }
   }
 
   if (loading) return <Spinner />;
+
+  const q = search.trim().toLowerCase();
+  const filtered = items.filter((it) => !q || it.name.toLowerCase().includes(q) || it.description.toLowerCase().includes(q));
+
   return (
-    <div className="max-w-3xl">
-      <PageTitle title="Catalog items" />
+    <>
+      <PageHeader title="Items" subtitle="Reusable goods and services you can add to invoices in one click." />
       <ErrorBanner message={error} />
-      <form
-        onSubmit={onCreate}
-        className="mb-8 grid grid-cols-2 gap-3 rounded-md border border-line bg-panel p-4"
-      >
-        <Field label="Type">
-          <select
-            className={inputCls}
-            value={form.type}
-            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-          >
-            <option value="">—</option>
-            {ITEM_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Name">
-          <input
-            className={inputCls}
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            required
-          />
-        </Field>
-        <Field label="Description">
-          <input
-            className={inputCls}
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-            required
-          />
-        </Field>
-        <Field label="Unit">
-          <input
-            className={inputCls}
-            value={form.unit}
-            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-            required
-          />
-        </Field>
-        <Field label="Selling price">
-          <input
-            className={inputCls}
-            type="number"
-            value={form.selling_price}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                selling_price: Number(e.target.value) || 0,
-              }))
-            }
-            required
-          />
-        </Field>
-        <Field label="Tax">
-          <input
-            className={inputCls}
-            type="number"
-            value={form.tax}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, tax: Number(e.target.value) || 0 }))
-            }
-            required
-          />
-        </Field>
-        <div className="col-span-2">
-          <button type="submit" disabled={busy} className={btnPrimary}>
-            {busy ? "Adding…" : "Add item"}
-          </button>
-        </div>
-      </form>
-      {items.length === 0 ? (
-        <p className="text-sm text-[#999]">No catalog items yet.</p>
-      ) : (
-        <ul className="divide-y divide-line rounded-md border border-line bg-white">
-          {items.map((it) => (
-            <li
-              key={it.id}
-              className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-panel"
-            >
-              <div>
-                <p className="font-medium">{it.name}</p>
-                <p className="text-sm text-[#999]">
-                  {it.type} · {it.unit} · {it.selling_price} (+{it.tax} tax)
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onDelete(it.id)}
-                className={btnDanger}
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
+        <Card padded={false} className="order-2 xl:order-1">
+          {items.length > 0 && (
+            <div className="border-b border-line-soft p-4">
+              <SearchInput value={search} onChange={setSearch} placeholder="Search items…" />
+            </div>
+          )}
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon="inventory_2"
+              title={items.length ? "No matching items" : "Your catalog is empty"}
+              description={items.length ? "Try a different search term." : "Add products or services you bill often."}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px]">
+                <thead>
+                  <tr>
+                    <th className={th}>Item</th>
+                    <th className={th}>Type</th>
+                    <th className={`${th} text-right`}>Price</th>
+                    <th className={`${th} text-right`}>Tax</th>
+                    <th className={th} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((it) => (
+                    <tr key={it.id} className="group border-t border-line-soft hover:bg-slate-50/80">
+                      <td className={td}>
+                        <p className="font-medium text-ink">{it.name}</p>
+                        <p className="max-w-[280px] truncate text-xs text-muted">{it.description}</p>
+                      </td>
+                      <td className={td}>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-line-soft px-2 py-0.5 text-xs font-medium text-ink-2">
+                          <Icon name={it.type === "Goods" ? "package_2" : "handyman"} className="text-[14px]" />
+                          {it.type || "—"}
+                        </span>
+                      </td>
+                      <td className={`${td} tabular text-right`}>
+                        <span className="font-medium">{formatMoney(it.selling_price)}</span>
+                        <span className="text-xs text-muted"> / {it.unit}</span>
+                      </td>
+                      <td className={`${td} tabular text-right text-muted`}>{it.tax}</td>
+                      <td className={`${td} w-12 text-right`}>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(it)}
+                          aria-label={`Delete ${it.name}`}
+                          className="rounded-md p-1.5 text-faint opacity-60 transition hover:bg-red-50 hover:text-danger group-hover:opacity-100"
+                        >
+                          <Icon name="delete" className="text-[18px]" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card title="New item" className="order-1 h-fit xl:order-2">
+          <form onSubmit={onCreate} className="space-y-4">
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-line-soft p-1">
+              {ITEM_TYPES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => set("type", t)}
+                  aria-pressed={form.type === t}
+                  className={`rounded-md py-1.5 text-[13px] font-medium transition ${
+                    form.type === t ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <Field label="Name" required>
+              <input className={inputCls} value={form.name} maxLength={50} onChange={(e) => set("name", e.target.value)} required />
+            </Field>
+            <Field label="Description" required>
+              <input className={inputCls} value={form.description} onChange={(e) => set("description", e.target.value)} required />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Price" required>
+                <input
+                  className={`${inputCls} tabular`}
+                  type="number"
+                  min={0}
+                  value={form.selling_price}
+                  onChange={(e) => set("selling_price", Number(e.target.value) || 0)}
+                  required
+                />
+              </Field>
+              <Field label="Unit" required>
+                <input
+                  className={inputCls}
+                  list="units"
+                  placeholder="hour, pcs…"
+                  value={form.unit}
+                  onChange={(e) => set("unit", e.target.value)}
+                  required
+                />
+                <datalist id="units">
+                  {["hour", "day", "pcs", "kg", "month"].map((u) => (
+                    <option key={u} value={u} />
+                  ))}
+                </datalist>
+              </Field>
+            </div>
+            <Field label="Tax" required>
+              <input
+                className={`${inputCls} tabular`}
+                type="number"
+                min={0}
+                value={form.tax}
+                onChange={(e) => set("tax", Number(e.target.value) || 0)}
+                required
+              />
+            </Field>
+            <button type="submit" disabled={busy} className={`${btnPrimary} w-full`}>
+              {busy ? <Spinner inline /> : <Icon name="add" className="text-[18px]" />}
+              {busy ? "Adding…" : "Add item"}
+            </button>
+          </form>
+        </Card>
+      </div>
+    </>
   );
 }
