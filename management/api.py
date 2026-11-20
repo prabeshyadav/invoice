@@ -1,14 +1,18 @@
 """REST API (JWT) under /api/. Every queryset is scoped to request.user."""
 
+from decimal import Decimal
+
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter
 
-from .models import AddCustomer, Invoice, Items, TableItems
+from .models import AddCustomer, Invoice, Items, TableItems, money
 from .serializers import (
     AddCustomerSerializer,
+    DashboardInvoiceSerializer,
     InvoiceSerializer,
     ItemsSerializer,
     RegisterSerializer,
@@ -116,7 +120,67 @@ class ItemsViewSet(OwnedViewSetMixin, viewsets.ModelViewSet):
     serializer_class = ItemsSerializer
 
 
+def display_status(invoice, today):
+    """Mirror of the frontend's displayStatus: unpaid and due before today is overdue."""
+    if invoice.status != 'paid' and invoice.due_date < today:
+        return 'overdue'
+    return invoice.status or 'draft'
+
+
+class DashboardViewSet(viewsets.ViewSet):
+    """GET /api/dashboard/: the owner's billing summary in one response.
+
+    Three queries whatever the invoice count: customers count, invoices (with
+    customer), line items (prefetched). Totals use Invoice.total so they match
+    the invoice pages to the cent.
+    """
+
+    def list(self, request):
+        today = timezone.localdate()
+        invoices = list(
+            Invoice.objects.filter(owner=request.user)
+            .select_related('customer_name')
+            .prefetch_related('tableitems_set')
+            .order_by('-id')
+        )
+        customer_count = AddCustomer.objects.filter(owner=request.user).count()
+
+        by_status = {s: {'count': 0, 'amount': Decimal('0')} for s in ('paid', 'sent', 'draft', 'overdue')}
+        statuses = {}
+        for invoice in invoices:
+            s = display_status(invoice, today)
+            statuses[invoice.id] = s
+            bucket = by_status.setdefault(s, {'count': 0, 'amount': Decimal('0')})
+            bucket['count'] += 1
+            bucket['amount'] += invoice.total
+
+        billed = sum((b['amount'] for b in by_status.values()), Decimal('0'))
+        collected = by_status['paid']['amount']
+        upcoming = sorted(
+            (i for i in invoices if statuses[i.id] not in ('paid', 'overdue')),
+            key=lambda i: (i.due_date, i.id),
+        )[:5]
+
+        fmt = lambda value: f'{money(value):.2f}'  # noqa: E731
+        return Response({
+            'invoice_count': len(invoices),
+            'customer_count': customer_count,
+            'totals': {
+                'billed': fmt(billed),
+                'collected': fmt(collected),
+                'outstanding': fmt(billed - collected),
+                'overdue': fmt(by_status['overdue']['amount']),
+            },
+            'by_status': {
+                s: {'count': b['count'], 'amount': fmt(b['amount'])} for s, b in by_status.items()
+            },
+            'recent': DashboardInvoiceSerializer(invoices[:6], many=True).data,
+            'upcoming': DashboardInvoiceSerializer(upcoming, many=True).data,
+        })
+
+
 router = DefaultRouter()
+router.register('dashboard', DashboardViewSet, basename='api-dashboard')
 router.register('customers', AddCustomerViewSet, basename='api-customers')
 router.register('invoices', InvoiceViewSet, basename='api-invoices')
 router.register('line-items', TableItemsViewSet, basename='api-line-items')
