@@ -6,6 +6,8 @@ export default function Icon({
   className?: string;
 }) {
   return (
-    <span className={`material-symbols-outlined ${className}`}>{name}</span>
+    <span aria-hidden="true" className={`material-symbols-outlined ${className}`}>
+      {name}
+    </span>
   );
 }

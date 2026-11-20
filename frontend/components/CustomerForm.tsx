@@ -1,14 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import {
-  CURRENCIES,
-  CUSTOMER_TYPES,
-  LANGUAGES,
-  SALUTATIONS,
-  type Customer,
-} from "@/lib/api";
-import { Field, btnPrimary, inputCls, selectCls } from "./ui";
+import { useState, type FormEvent, type HTMLInputTypeAttribute } from "react";
+import Link from "next/link";
+import { CURRENCIES, CUSTOMER_TYPES, LANGUAGES, SALUTATIONS, type Customer } from "@/lib/api";
+import Icon from "./Icon";
+import { Card, Field, Spinner, btnPrimary, btnSecondary, inputCls, selectCls } from "./ui";
 
 export interface CustomerPayload {
   customer_type: string;
@@ -28,8 +24,10 @@ export interface CustomerPayload {
   twitter: string;
 }
 
+type Key = keyof CustomerPayload;
+
 const EMPTY: CustomerPayload = {
-  customer_type: "",
+  customer_type: "business",
   primary_contact: "",
   first_name: "",
   last_name: "",
@@ -46,61 +44,71 @@ const EMPTY: CustomerPayload = {
   twitter: "",
 };
 
-function Select({
-  value,
-  onChange,
-  options,
-  placeholder,
-  required,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <select
-      className={selectCls}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required={required}
-    >
-      <option value="">{placeholder ?? "—"}</option>
-      {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="mb-4 text-[13px] font-semibold text-[#0f172a]">
-      {children}
-    </h3>
-  );
-}
-
 export default function CustomerForm({
   initial,
   onSubmit,
   busy,
   submitLabel,
+  onCancel,
+  cancelHref,
 }: {
   initial?: Customer;
   onSubmit: (payload: CustomerPayload) => void;
   busy: boolean;
   submitLabel: string;
+  onCancel?: () => void;
+  cancelHref?: string;
 }) {
-  const [form, setForm] = useState<CustomerPayload>({
-    ...EMPTY,
-    ...(initial as Partial<CustomerPayload>),
+  const [form, setForm] = useState<CustomerPayload>(() => {
+    const merged = { ...EMPTY };
+    for (const k of Object.keys(EMPTY) as Key[]) {
+      if (initial?.[k] != null) merged[k] = String(initial[k]);
+    }
+    return merged;
   });
-  const set = (k: keyof CustomerPayload) => (v: string) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  // Auto-fill the display name until the user edits it themselves.
+  const [displayTouched, setDisplayTouched] = useState(!!initial);
+
+  const set = (k: Key, v: string) =>
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      if (!displayTouched && (k === "first_name" || k === "last_name" || k === "company_name")) {
+        next.customer_display_name =
+          next.customer_type === "business" && next.company_name
+            ? next.company_name
+            : `${next.first_name} ${next.last_name}`.trim();
+      }
+      return next;
+    });
+
+  const input = (k: Key, label: string, opts: { type?: HTMLInputTypeAttribute; placeholder?: string; required?: boolean } = {}) => (
+    <Field label={label} required={opts.required}>
+      <input
+        className={inputCls}
+        type={opts.type ?? "text"}
+        value={form[k]}
+        placeholder={opts.placeholder}
+        required={opts.required}
+        onChange={(e) => {
+          if (k === "customer_display_name") setDisplayTouched(true);
+          set(k, e.target.value);
+        }}
+      />
+    </Field>
+  );
+
+  const select = (k: Key, label: string, options: string[], required = false) => (
+    <Field label={label} required={required}>
+      <select className={selectCls} value={form[k]} onChange={(e) => set(k, e.target.value)} required={required}>
+        <option value="">Select…</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -108,171 +116,73 @@ export default function CustomerForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Basic Info */}
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-        <SectionTitle>Basic Information</SectionTitle>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Customer Type">
-            <Select
-              value={form.customer_type}
-              onChange={set("customer_type")}
-              options={CUSTOMER_TYPES}
-            />
-          </Field>
-          <Field label="Salutation">
-            <Select
-              value={form.primary_contact}
-              onChange={set("primary_contact")}
-              options={SALUTATIONS}
-              required
-            />
-          </Field>
-          <Field label="First Name">
-            <input
-              className={inputCls}
-              value={form.first_name}
-              onChange={(e) => set("first_name")(e.target.value)}
-              placeholder="First name"
-              required
-            />
-          </Field>
-          <Field label="Last Name">
-            <input
-              className={inputCls}
-              value={form.last_name}
-              onChange={(e) => set("last_name")(e.target.value)}
-              placeholder="Last name"
-              required
-            />
-          </Field>
-          <Field label="Display Name">
-            <input
-              className={inputCls}
-              value={form.customer_display_name}
-              onChange={(e) => set("customer_display_name")(e.target.value)}
-              placeholder="How the name appears"
-              required
-            />
-          </Field>
-          <Field label="Company">
-            <input
-              className={inputCls}
-              value={form.company_name}
-              onChange={(e) => set("company_name")(e.target.value)}
-              placeholder="Company name (optional)"
-            />
-          </Field>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card title="Customer type">
+        <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+          {CUSTOMER_TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => set("customer_type", t)}
+              aria-pressed={form.customer_type === t}
+              className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 text-left text-sm font-medium capitalize transition ${
+                form.customer_type === t
+                  ? "border-accent bg-accent-soft text-accent ring-1 ring-accent"
+                  : "border-line text-ink-2 hover:border-slate-300"
+              }`}
+            >
+              <Icon name={t === "business" ? "apartment" : "person"} className="text-[20px]" />
+              {t}
+            </button>
+          ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Contact */}
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-        <SectionTitle>Contact Details</SectionTitle>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Email">
-            <input
-              className={inputCls}
-              type="email"
-              value={form.email}
-              onChange={(e) => set("email")(e.target.value)}
-              placeholder="email@example.com"
-              required
-            />
-          </Field>
-          <Field label="Phone">
-            <input
-              className={inputCls}
-              value={form.phone}
-              onChange={(e) => set("phone")(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              required
-            />
-          </Field>
-          <Field label="Mobile">
-            <input
-              className={inputCls}
-              value={form.mobile}
-              onChange={(e) => set("mobile")(e.target.value)}
-              placeholder="+1 (555) 000-0001"
-              required
-            />
-          </Field>
-          <Field label="Website">
-            <input
-              className={inputCls}
-              value={form.website}
-              onChange={(e) => set("website")(e.target.value)}
-              placeholder="https://example.com"
-            />
-          </Field>
+      <Card title="Primary contact">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+          <div className="sm:col-span-2">{select("primary_contact", "Salutation", SALUTATIONS, true)}</div>
+          <div className="sm:col-span-2">{input("first_name", "First name", { required: true })}</div>
+          <div className="sm:col-span-2">{input("last_name", "Last name", { required: true })}</div>
+          <div className="sm:col-span-3">{input("company_name", "Company name", { placeholder: "Optional" })}</div>
+          <div className="sm:col-span-3">
+            {input("customer_display_name", "Display name", { required: true, placeholder: "Shown on invoices" })}
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Settings */}
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-        <SectionTitle>Settings & Preferences</SectionTitle>
+      <Card title="Contact details">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Currency">
-            <Select
-              value={form.currency}
-              onChange={set("currency")}
-              options={CURRENCIES}
-              required
-            />
-          </Field>
-          <Field label="Portal Language">
-            <Select
-              value={form.Portal_Language}
-              onChange={set("Portal_Language")}
-              options={LANGUAGES}
-            />
-          </Field>
-          <Field label="Individual Name">
-            <input
-              className={inputCls}
-              value={form.individual_name}
-              onChange={(e) => set("individual_name")(e.target.value)}
-              placeholder="Individual name (optional)"
-            />
-          </Field>
+          {input("email", "Email", { type: "email", required: true, placeholder: "name@company.com" })}
+          {input("website", "Website", { placeholder: "https://" })}
+          {input("phone", "Work phone", { type: "tel", required: true })}
+          {input("mobile", "Mobile", { type: "tel", required: true })}
         </div>
-      </div>
+      </Card>
 
-      {/* Social */}
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-        <SectionTitle>Social Media</SectionTitle>
+      <Card title="Preferences & social">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Facebook">
-            <input
-              className={inputCls}
-              value={form.facebook}
-              onChange={(e) => set("facebook")(e.target.value)}
-              placeholder="Facebook profile URL"
-            />
-          </Field>
-          <Field label="Twitter / X">
-            <input
-              className={inputCls}
-              value={form.twitter}
-              onChange={(e) => set("twitter")(e.target.value)}
-              placeholder="@username"
-            />
-          </Field>
+          {select("currency", "Currency", CURRENCIES, true)}
+          {select("Portal_Language", "Portal language", LANGUAGES)}
+          {input("facebook", "Facebook", { placeholder: "Profile URL" })}
+          {input("twitter", "Twitter / X", { placeholder: "@handle" })}
         </div>
-      </div>
+      </Card>
 
-      {/* Submit */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel ? (
+          <button type="button" onClick={onCancel} className={btnSecondary}>
+            Cancel
+          </button>
+        ) : (
+          cancelHref && (
+            <Link href={cancelHref} className={btnSecondary}>
+              Cancel
+            </Link>
+          )
+        )}
         <button type="submit" disabled={busy} className={btnPrimary}>
-          {busy ? (
-            <span className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              Saving…
-            </span>
-          ) : (
-            submitLabel
-          )}
+          {busy && <Spinner inline />}
+          {busy ? "Saving…" : submitLabel}
         </button>
       </div>
     </form>
