@@ -139,6 +139,21 @@ class SendEmailSerializer(serializers.Serializer):
     message = serializers.CharField(required=False, allow_blank=True)
 
 
+class DashboardInvoiceSerializer(serializers.ModelSerializer):
+    """The invoice fields the dashboard lists need (no line items)."""
+    customer_display_name = serializers.CharField(
+        source='customer_name.customer_display_name', read_only=True
+    )
+    total = money_field()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'customer_name', 'customer_display_name', 'invoice_number',
+            'invoice_date', 'due_date', 'subject', 'status', 'total',
+        ]
+
+
 class ItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Items
