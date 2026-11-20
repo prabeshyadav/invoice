@@ -390,5 +390,57 @@ class InvoiceNumberingTests(TestCase):
         self.assertIn('invoice_number', res.data)
 
 
-#END
+class SendInvoiceEmailTests(TestCase):
+    def setUp(self):
+        self.owner = default_owner()
+        self.invoice = make_invoice(make_customer(owner=self.owner), 'KIT-101')
+        self.client = APIClient()
+        self.client.force_authenticate(self.owner)
+
+    def test_endpoint_queues_task_and_returns_202(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(
+                f'/api/invoices/{self.invoice.id}/send_email/',
+                {'to': 'boss@example.com', 'subject': 'Hi', 'message': 'Pay'}, format='json',
+            )
+        self.assertEqual(res.status_code, 202)
+        self.assertIn('boss@example.com', res.data['detail'])
+        delay.assert_called_once_with(self.invoice.id, 'boss@example.com', 'Hi', 'Pay')
+
+    def test_defaults_to_customer_email(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(f'/api/invoices/{self.invoice.id}/send_email/', {}, format='json')
+        self.assertEqual(res.status_code, 202)
+        self.assertEqual(delay.call_args.args[1], 'c1@example.com')
+        self.assertIn('KIT-101', delay.call_args.args[2])
+
+    def test_invalid_address_is_400(self):
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = self.client.post(
+                f'/api/invoices/{self.invoice.id}/send_email/', {'to': 'nope'}, format='json'
+            )
+        self.assertEqual(res.status_code, 400)
+        delay.assert_not_called()
+
+    def test_other_users_invoice_is_404(self):
+        intruder = APIClient()
+        intruder.force_authenticate(User.objects.create_user('intruder'))
+        with patch('management.api.send_invoice_email.delay') as delay:
+            res = intruder.post(f'/api/invoices/{self.invoice.id}/send_email/', {}, format='json')
+        self.assertEqual(res.status_code, 404)
+        delay.assert_not_called()
+
+    def test_task_sends_email_with_pdf(self):
+        tasks.send_invoice_email(self.invoice.id, 'boss@example.com', 'Hi', 'Pay')
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual((msg.to, msg.subject, msg.body), (['boss@example.com'], 'Hi', 'Pay'))
+        self.assertEqual(msg.attachments[0][0], 'invoice-KIT-101.pdf')
+        self.assertEqual(msg.attachments[0][2], 'application/pdf')
+
+    def test_task_ignores_deleted_invoice(self):
+        tasks.send_invoice_email(999999, 'boss@example.com', 'Hi', 'Pay')
+        self.assertEqual(mail.outbox, [])
+
+
 #END

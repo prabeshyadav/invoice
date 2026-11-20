@@ -132,6 +132,13 @@ class InvoiceSerializer(serializers.ModelSerializer):
         return instance
 
 
+class SendEmailSerializer(serializers.Serializer):
+    """Optional overrides for POST /api/invoices/{id}/send_email/."""
+    to = serializers.EmailField(required=False, allow_blank=True)
+    subject = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    message = serializers.CharField(required=False, allow_blank=True)
+
+
 class ItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Items
