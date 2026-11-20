@@ -16,8 +16,13 @@ interface AuthState {
   ready: boolean;
   username: string | null;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<RegisterResult>;
   logout: () => void;
+}
+
+/* verificationRequired: the account exists but stays inactive until the emailed link is opened. */
+export interface RegisterResult {
+  verificationRequired: boolean;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -59,9 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (user: string, email: string, password: string) => {
-      await post("/auth/register/", { username: user, email, password });
+    async (user: string, email: string, password: string): Promise<RegisterResult> => {
+      const data = await post("/auth/register/", { username: user, email, password });
+      if (data?.verification_required) return { verificationRequired: true };
       await login(user, password);
+      return { verificationRequired: false };
     },
     [login]
   );
