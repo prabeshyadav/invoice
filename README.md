@@ -133,7 +133,7 @@ balancer) in front of the frontend port; it forwards `/api/*` to Django.
    | Variable | Required | Default | Purpose |
    |---|---|---|---|
    | `SECRET_KEY` | yes | — | 50+ random characters. Startup fails if missing or `django-insecure-…` while `DEBUG` is off. Generate: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
-   | `POSTGRES_PASSWORD` | yes | — | Database password (URL-safe characters only; it is embedded in `DATABASE_URL`) |
+   | `POSTGRES_PASSWORD` | yes | — | Database password, read from `.env` by both Postgres and Django (any characters) |
    | `POSTGRES_USER` / `POSTGRES_DB` | no | `invoice` | Database user and name |
    | `ALLOWED_HOSTS` | yes | `localhost,127.0.0.1,backend` | Your domain(s). Keep `backend`: the frontend proxy and healthcheck use it |
    | `CSRF_TRUSTED_ORIGINS` | for `/admin` | — | e.g. `https://invoice.example.com` |
@@ -147,7 +147,7 @@ balancer) in front of the frontend port; it forwards `/api/*` to Django.
    | `FRONTEND_PORT` | no | `3000` | Host port for the frontend |
    | `REMINDER_DAYS_BEFORE_DUE`, `TIME_ZONE` | no | `3`, `UTC` | Reminder schedule |
 
-   The compose file sets `DEBUG=False`, `DATABASE_URL`, `CELERY_BROKER_URL` and
+   The compose file sets `DEBUG=False`, `POSTGRES_HOST=db`, `CELERY_BROKER_URL` and
    `CACHE_URL` (Redis, so rate limits are shared across workers) itself.
 
 2. Start it and create an admin user:
