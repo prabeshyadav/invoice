@@ -4,15 +4,21 @@ from django.contrib.auth.models import User
 from django.db import connection
 from rest_framework import permissions
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from . import account
 from .api import RegisterView
+from .throttling import IdentifierRateThrottle
+
+# Default IP/user/scope throttles plus the per-username/email one.
+IDENTIFIER_THROTTLES = [*api_settings.DEFAULT_THROTTLE_CLASSES, IdentifierRateThrottle]
 
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_scope = 'auth'
+    throttle_classes = IDENTIFIER_THROTTLES
     serializer_class = account.VerifiedTokenObtainPairSerializer
 
 
@@ -33,6 +39,7 @@ class _PublicAuthView(APIView):
 
 
 class PasswordResetView(_PublicAuthView):
+    throttle_classes = IDENTIFIER_THROTTLES
     serializer_class = account.EmailSerializer
     message = 'If an account exists for that email, a reset link has been sent.'
 
@@ -67,6 +74,7 @@ class VerifyEmailView(_PublicAuthView):
 
 
 class ResendVerificationView(_PublicAuthView):
+    throttle_classes = IDENTIFIER_THROTTLES
     serializer_class = account.EmailSerializer
     message = 'If that account still needs verifying, a new link has been sent.'
 
