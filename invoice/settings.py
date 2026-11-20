@@ -158,12 +158,17 @@ SIMPLE_JWT = {
 from celery.schedules import crontab
 
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
 
-# Celery Beat settings
+# Unpaid invoices get one reminder email this many days before their due date.
+REMINDER_DAYS_BEFORE_DUE = int(os.environ.get('REMINDER_DAYS_BEFORE_DUE', 3))
+
+# Celery Beat settings. Must run once a day: send_due_date_reminders matches
+# an exact due date, so running it more often would send duplicate reminders.
 CELERY_BEAT_SCHEDULE = {
-    'send_due_date_email': {
-        'task': 'management.tasks.send_due_date_email',
-        'schedule': crontab(minute=2),
+    'send_due_date_reminders': {
+        'task': 'management.tasks.send_due_date_reminders',
+        'schedule': crontab(hour=8, minute=0),
     },
 }
 
