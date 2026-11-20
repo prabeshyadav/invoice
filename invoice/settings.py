@@ -251,5 +251,10 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
 
+# Public URL of the Next.js app; links in password-reset and verification emails point here.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:3000').rstrip('/')
+# New accounts stay inactive until the emailed link is opened.
+EMAIL_VERIFICATION_REQUIRED = env_bool('EMAIL_VERIFICATION_REQUIRED', True)
+
 
 
