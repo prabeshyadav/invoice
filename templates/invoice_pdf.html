@@ -176,20 +176,20 @@
                 </div>
                 <div style="padding: 5px 0; margin:0;">
                   <span style="color:#FF3E3E;">
-                    Discount(10%) &nbsp;</span>
+                    Discount ({{ invoice_object.discount_percent|floatformat:"-2" }}%) &nbsp;</span>
                   <span id="pdf_discount" style=" width: 120px; color: #FF3E3E;">
                     {{invoice_object.discount_amount}}
                     </span>
                 </div>
                 <div style="padding:5px 0;margin: 0;">
-                  <span >Tax: Vat(0%) &nbsp;</span>
+                  <span >Tax ({{ invoice_object.tax_percent|floatformat:"-2" }}%) &nbsp;</span>
                   <span id="pdf_tax">NPR
-                    00.00</span>
+                    {{ invoice_object.tax_amount }}</span>
                 </div>
                 <div style="height:40px; background-color: #f7f7f7; width: 100%; padding:5px 0;margin: 0;"
                   class="pcs-balance">
                   <span><b>Balance Due &nbsp;</b></span>
-                  <span id="pdf_balance_due"><b>NPR {{invoice_object.discounted_total_amount}}</b></span>
+                  <span id="pdf_balance_due"><b>NPR {{ invoice_object.total }}</b></span>
                 </div>
               </td>
 
@@ -218,7 +218,7 @@
               </td>
               <td rowspan="1" class=" lineitem-column lineitem-content-right"
                 style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 24px;">
-                <span id="item_amount">NPR {{invoice_object.discounted_total_amount}}</span>
+                <span id="item_amount">NPR {{ invoice_object.total }}</span>
               </td>
             </tr>
           </tbody>
