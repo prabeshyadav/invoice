@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authenticated: true, username });
   }
 
-  const access = await refreshAccess(request.cookies.get(REFRESH_COOKIE)?.value);
+  const access = await refreshAccess(request, request.cookies.get(REFRESH_COOKIE)?.value);
   if (access && username) {
     const response = NextResponse.json({ authenticated: true, username });
     setAccessCookie(request, response, access);

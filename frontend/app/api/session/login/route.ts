@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { API_URL, forbidden, isSameOrigin, setSessionCookies } from "@/lib/session";
+import { API_URL, backendHeaders, forbidden, isSameOrigin, setSessionCookies } from "@/lib/session";
 
 /* Exchanges credentials for JWTs server-side and stores them in httpOnly
  * cookies. Django's error status and body (401, 429, …) pass through. */
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as { username?: string; password?: string };
   const upstream = await fetch(new URL("/api/auth/token/", API_URL), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: backendHeaders(request, { "content-type": "application/json" }),
     body: JSON.stringify({ username: body.username, password: body.password }),
   });
   const data = await upstream.json().catch(() => null);

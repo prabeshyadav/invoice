@@ -73,12 +73,27 @@ export function forbidden(): Response {
   return Response.json({ detail: "Cross-site request rejected." }, { status: 403 });
 }
 
+/* Headers for a server-side call to Django on behalf of `request`. Django
+ * throttles by client IP, and without this every user would share the Next.js
+ * server's address. Next.js fills x-forwarded-for from the socket when the
+ * incoming request has none, and keeps the value a TLS reverse proxy set;
+ * Django trusts only its last entry (TRUSTED_PROXY_COUNT). */
+export function backendHeaders(request: NextRequest, init?: HeadersInit): Headers {
+  const headers = new Headers(init);
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) headers.set("x-forwarded-for", forwardedFor);
+  return headers;
+}
+
 /* Exchanges the refresh cookie for a new access token, or null. */
-export async function refreshAccess(refresh: string | undefined): Promise<string | null> {
+export async function refreshAccess(
+  request: NextRequest,
+  refresh: string | undefined
+): Promise<string | null> {
   if (!refresh) return null;
   const res = await fetch(new URL("/api/auth/token/refresh/", API_URL), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: backendHeaders(request, { "content-type": "application/json" }),
     body: JSON.stringify({ refresh }),
   });
   if (!res.ok) return null;
