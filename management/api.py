@@ -36,6 +36,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     )
     serializer_class = InvoiceSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        customer_id = self.request.query_params.get('customer')
+        if customer_id:
+            queryset = queryset.filter(customer_name_id=customer_id)
+        return queryset
+
     def _pdf_context(self, invoice):
         return {
             'invoice_object': invoice,
