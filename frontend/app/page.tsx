@@ -69,7 +69,7 @@ function DashboardBody() {
 
   if (loading) return <Spinner />;
 
-  const sum = (xs: Invoice[]) => xs.reduce((s, i) => s + Number(i.discounted_total_amount), 0);
+  const sum = (xs: Invoice[]) => xs.reduce((s, i) => s + Number(i.total), 0);
   const byStatus = (s: string) => invoices.filter((i) => displayStatus(i) === s);
   const paid = byStatus("paid");
   const overdue = byStatus("overdue");
@@ -217,7 +217,7 @@ function DashboardBody() {
                           <StatusBadge status={displayStatus(inv)} />
                         </td>
                         <td className={`${td} tabular text-right font-medium`}>
-                          {formatMoney(inv.discounted_total_amount)}
+                          {formatMoney(inv.total)}
                         </td>
                       </tr>
                     ))}
@@ -244,7 +244,7 @@ function DashboardBody() {
                           </p>
                         </div>
                         <span className="tabular text-sm font-medium">
-                          {formatMoney(inv.discounted_total_amount)}
+                          {formatMoney(inv.total)}
                         </span>
                       </Link>
                     </li>

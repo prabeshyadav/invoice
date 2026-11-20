@@ -3,11 +3,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
-  DISCOUNT_PERCENT,
   INVOICE_STATUSES,
   customerName,
   formatMoney,
   listAll,
+  roundMoney,
   type CatalogItem,
   type Customer,
   type Invoice,
@@ -24,6 +24,8 @@ export interface InvoicePayload {
   due_date: string;
   subject: string;
   status: string;
+  discount_percent: number;
+  tax_percent: number;
   line_items: Row[];
 }
 
@@ -34,6 +36,27 @@ function todayPlus(days: number): string {
 }
 
 const EMPTY_ROW: Row = { items_details: "", quantity: 1, rate: 0 };
+
+function PercentInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-3 text-ink-2">
+      <span>{label}</span>
+      <span className="relative w-24">
+        <input
+          className={`${inputCls} tabular h-9 pr-7 text-right`}
+          type="number"
+          min={0}
+          max={100}
+          step="0.01"
+          aria-label={`${label} percent`}
+          value={value}
+          onChange={(e) => onChange(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-faint">%</span>
+      </span>
+    </label>
+  );
+}
 
 export default function InvoiceForm({
   customers,
@@ -58,9 +81,15 @@ export default function InvoiceForm({
   const [dueDate, setDueDate] = useState(initial?.due_date ?? todayPlus(30));
   const [subject, setSubject] = useState(initial?.subject ?? "");
   const [status, setStatus] = useState(initial?.status ?? "draft");
+  const [discountPercent, setDiscountPercent] = useState(Number(initial?.discount_percent ?? 0));
+  const [taxPercent, setTaxPercent] = useState(Number(initial?.tax_percent ?? 0));
   const [rows, setRows] = useState<Row[]>(
     initial?.line_items.length
-      ? initial.line_items.map(({ items_details, quantity, rate }) => ({ items_details, quantity, rate }))
+      ? initial.line_items.map(({ items_details, quantity, rate }) => ({
+          items_details,
+          quantity: Number(quantity),
+          rate: Number(rate),
+        }))
       : [{ ...EMPTY_ROW }]
   );
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -77,7 +106,7 @@ export default function InvoiceForm({
   function addFromCatalog(itemId: string) {
     const item = catalog.find((c) => c.id === Number(itemId));
     if (!item) return;
-    const row = { items_details: item.name, quantity: 1, rate: item.selling_price };
+    const row = { items_details: item.name, quantity: 1, rate: Number(item.selling_price) };
     // Fill the first blank row instead of leaving an empty one behind.
     setRows((rs) => {
       const blank = rs.findIndex((r) => !r.items_details.trim());
@@ -94,12 +123,17 @@ export default function InvoiceForm({
       due_date: dueDate,
       subject,
       status,
+      discount_percent: discountPercent,
+      tax_percent: taxPercent,
       line_items: rows.filter((r) => r.items_details.trim() !== ""),
     });
   }
 
-  const subtotal = rows.reduce((s, r) => s + r.quantity * r.rate, 0);
-  const discount = (subtotal * DISCOUNT_PERCENT) / 100;
+  // Same order and rounding as Invoice in management/models.py.
+  const subtotal = rows.reduce((s, r) => s + roundMoney(r.quantity * r.rate), 0);
+  const discount = roundMoney((subtotal * discountPercent) / 100);
+  const taxable = subtotal - discount;
+  const tax = roundMoney((taxable * taxPercent) / 100);
   const selectedCustomer = customers.find((c) => c.id === customerId);
 
   return (
@@ -219,7 +253,8 @@ export default function InvoiceForm({
                 <input
                   className={`${inputCls} tabular`}
                   type="number"
-                  min={1}
+                  min={0.01}
+                  step="0.01"
                   aria-label="Quantity"
                   value={r.quantity}
                   onChange={(e) => updateRow(i, { quantity: Math.max(0, Number(e.target.value) || 0) })}
@@ -229,13 +264,14 @@ export default function InvoiceForm({
                   className={`${inputCls} tabular`}
                   type="number"
                   min={0}
+                  step="0.01"
                   aria-label="Rate"
                   value={r.rate}
                   onChange={(e) => updateRow(i, { rate: Math.max(0, Number(e.target.value) || 0) })}
                   required
                 />
                 <span className="tabular hidden text-right text-sm font-medium text-ink md:block">
-                  {formatMoney(r.quantity * r.rate)}
+                  {formatMoney(roundMoney(r.quantity * r.rate))}
                 </span>
                 <button
                   type="button"
@@ -259,24 +295,32 @@ export default function InvoiceForm({
       <div>
         <div className="space-y-4 xl:sticky xl:top-10">
           <Card title="Summary">
-            <dl className="tabular space-y-2 text-sm">
+            <div className="space-y-2 border-b border-line-soft pb-4 text-sm">
               {selectedCustomer && (
-                <div className="mb-3 flex justify-between gap-2 border-b border-line-soft pb-3">
-                  <dt className="text-muted">Currency</dt>
-                  <dd className="font-medium">{selectedCustomer.currency}</dd>
-                </div>
+                <p className="flex justify-between gap-2">
+                  <span className="text-muted">Currency</span>
+                  <span className="font-medium">{selectedCustomer.currency}</span>
+                </p>
               )}
+              <PercentInput label="Discount" value={discountPercent} onChange={setDiscountPercent} />
+              <PercentInput label="Tax" value={taxPercent} onChange={setTaxPercent} />
+            </div>
+            <dl className="tabular mt-4 space-y-2 text-sm">
               <div className="flex justify-between text-ink-2">
                 <dt>Subtotal</dt>
                 <dd>{formatMoney(subtotal)}</dd>
               </div>
               <div className="flex justify-between text-ink-2">
-                <dt>Discount ({DISCOUNT_PERCENT}%)</dt>
+                <dt>Discount</dt>
                 <dd>−{formatMoney(discount)}</dd>
+              </div>
+              <div className="flex justify-between text-ink-2">
+                <dt>Tax</dt>
+                <dd>{formatMoney(tax)}</dd>
               </div>
               <div className="flex justify-between border-t border-line pt-3 text-lg font-semibold text-ink">
                 <dt>Total</dt>
-                <dd>{formatMoney(subtotal - discount)}</dd>
+                <dd>{formatMoney(taxable + tax)}</dd>
               </div>
             </dl>
           </Card>
