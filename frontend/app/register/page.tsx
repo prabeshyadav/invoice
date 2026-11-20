@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api";
 import AuthLayout from "@/components/AuthLayout";
-import { ErrorBanner, Field, Spinner, btnPrimary, inputCls } from "@/components/ui";
+import Icon from "@/components/Icon";
+import { ErrorBanner, Field, Spinner, btnPrimary, btnSecondary, inputCls } from "@/components/ui";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -16,18 +17,52 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      await register(username, email, password);
+      const { verificationRequired } = await register(username, email, password);
+      if (verificationRequired) {
+        setPendingEmail(email);
+        setBusy(false);
+        return;
+      }
       router.replace("/");
     } catch (err) {
       setError(apiErrorMessage(err));
       setBusy(false);
     }
+  }
+
+  if (pendingEmail) {
+    return (
+      <AuthLayout
+        title="Check your email"
+        subtitle="One more step to activate your account."
+        footer={
+          <>
+            Already verified?{" "}
+            <Link href="/login" className="font-medium text-accent hover:underline">
+              Sign in
+            </Link>
+          </>
+        }
+      >
+        <div className="rounded-xl border border-line bg-slate-50 p-5 text-sm text-ink-2">
+          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent">
+            <Icon name="mark_email_unread" className="text-[22px]" />
+          </span>
+          We sent a verification link to <strong className="text-ink">{pendingEmail}</strong>. Open it to activate
+          your account, then sign in.
+        </div>
+        <Link href="/verify-email" className={`${btnSecondary} mt-4 h-11 w-full`}>
+          Didn&apos;t get it? Resend the link
+        </Link>
+      </AuthLayout>
+    );
   }
 
   return (
@@ -65,7 +100,7 @@ export default function RegisterPage() {
             autoComplete="email"
           />
         </Field>
-        <Field label="Password" hint="At least 8 characters.">
+        <Field label="Password" hint="At least 8 characters, not too common or all numbers.">
           <input
             className={`${inputCls} h-11`}
             type="password"

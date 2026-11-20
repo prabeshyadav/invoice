@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { RequireAuth } from "@/lib/auth";
 import {
-  DISCOUNT_PERCENT,
   INVOICE_STATUSES,
   apiErrorMessage,
   apiFetch,
@@ -13,6 +12,7 @@ import {
   displayStatus,
   formatDate,
   formatMoney,
+  formatPercent,
   type Customer,
   type Invoice,
 } from "@/lib/api";
@@ -207,7 +207,7 @@ function InvoiceDetailBody() {
             <div className="sm:text-right">
               <p className="text-xs font-medium uppercase tracking-wide text-faint">Amount due</p>
               <p className="tabular mt-1.5 text-2xl font-semibold text-ink">
-                {formatMoney(invoice.discounted_total_amount)}
+                {formatMoney(invoice.total)}
               </p>
               {customer && <p className="text-xs text-muted">{customer.currency}</p>}
             </div>
@@ -234,7 +234,7 @@ function InvoiceDetailBody() {
                 {invoice.line_items.map((l) => (
                   <tr key={l.id} className="border-b border-line-soft">
                     <td className="py-3 text-ink">{l.items_details}</td>
-                    <td className="py-3 text-right text-ink-2">{l.quantity}</td>
+                    <td className="py-3 text-right text-ink-2">{Number(l.quantity)}</td>
                     <td className="py-3 text-right text-ink-2">{formatMoney(l.rate)}</td>
                     <td className="py-3 text-right font-medium text-ink">{formatMoney(l.amount)}</td>
                   </tr>
@@ -248,13 +248,21 @@ function InvoiceDetailBody() {
               <dt>Subtotal</dt>
               <dd>{formatMoney(invoice.sub_total)}</dd>
             </div>
-            <div className="flex justify-between text-ink-2">
-              <dt>Discount ({DISCOUNT_PERCENT}%)</dt>
-              <dd>−{formatMoney(invoice.discount_amount)}</dd>
-            </div>
+            {Number(invoice.discount_percent) > 0 && (
+              <div className="flex justify-between text-ink-2">
+                <dt>Discount ({formatPercent(invoice.discount_percent)})</dt>
+                <dd>−{formatMoney(invoice.discount_amount)}</dd>
+              </div>
+            )}
+            {Number(invoice.tax_percent) > 0 && (
+              <div className="flex justify-between text-ink-2">
+                <dt>Tax ({formatPercent(invoice.tax_percent)})</dt>
+                <dd>{formatMoney(invoice.tax_amount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-line pt-3 text-base font-semibold text-ink">
               <dt>Total</dt>
-              <dd>{formatMoney(invoice.discounted_total_amount)}</dd>
+              <dd>{formatMoney(invoice.total)}</dd>
             </div>
           </dl>
         </article>
