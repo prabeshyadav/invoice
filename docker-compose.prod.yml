@@ -1,0 +1,82 @@
+# Production stack: PostgreSQL, gunicorn, Celery, Redis, Next.js.
+# Requires a .env file next to this one (see README "Production deployment").
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Put a TLS-terminating reverse proxy (Caddy, nginx, a load balancer) in front
+# of the frontend on port 3000; it forwards /api/* to Django internally.
+
+x-django: &django
+  build: .
+  restart: unless-stopped
+  env_file:
+    - path: .env
+      required: true
+  environment:
+    DEBUG: "False"
+    DATABASE_URL: postgres://${POSTGRES_USER:-invoice}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-invoice}
+    CELERY_BROKER_URL: redis://redis:6379/0
+    CACHE_URL: redis://redis:6379/1
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-invoice}
+      POSTGRES_USER: ${POSTGRES_USER:-invoice}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  backend:
+    <<: *django
+    command: sh -c "python manage.py migrate --noinput && exec gunicorn invoice.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-3} --timeout $${GUNICORN_TIMEOUT:-60} --access-logfile -"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      # Host `backend` must be in ALLOWED_HOSTS (it is by default); the
+      # Next.js proxy uses the same host name.
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/api/health/', headers={'Host': 'backend'}), timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  celery_worker:
+    <<: *django
+    command: celery -A invoice worker -l info
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  celery_beat:
+    <<: *django
+    command: celery -A invoice beat -l info --schedule /tmp/celerybeat-schedule
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

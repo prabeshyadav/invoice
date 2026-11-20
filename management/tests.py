@@ -7,10 +7,15 @@ from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.cache import cache
+from django.core.exceptions import ImproperlyConfigured
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.utils.module_loading import import_string
 from rest_framework.test import APIClient
+from rest_framework.throttling import SimpleRateThrottle
+
+from invoice.env import resolve_secret_key
 
 from . import tasks
 from .models import AddCustomer, Invoice, Items, TableItems
@@ -296,3 +301,45 @@ class OwnerIsolationTests(TestCase):
         res = self.as_alice.post('/api/customers/', payload, format='json')
         self.assertEqual(res.status_code, 400)
         self.assertIn('email', res.data)
+
+
+class ProductionReadinessTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_health_is_public_and_reports_ok(self):
+        res = APIClient().get('/api/health/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {'status': 'ok'})
+
+    def test_login_is_throttled(self):
+        User.objects.create_user('u', password='pass12345')
+        client = APIClient()
+        body = {'username': 'u', 'password': 'wrong-password'}
+        # THROTTLE_RATES is read once at import; patch the shared dict.
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '2/min'}):
+            codes = [client.post('/api/auth/token/', body, format='json').status_code for _ in range(3)]
+        self.assertEqual(codes, [401, 401, 429])
+
+    def test_register_is_throttled(self):
+        client = APIClient()
+        with patch.dict(SimpleRateThrottle.THROTTLE_RATES, {'auth': '1/min'}):
+            first = client.post('/api/auth/register/', {
+                'username': 'new', 'email': 'n@example.com', 'password': 'pass12345',
+            }, format='json')
+            second = client.post('/api/auth/register/', {
+                'username': 'new2', 'email': 'n2@example.com', 'password': 'pass12345',
+            }, format='json')
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 429)
+
+    def test_secret_key_guard(self):
+        with self.assertRaises(ImproperlyConfigured):
+            resolve_secret_key('', debug=False)
+        with self.assertRaises(ImproperlyConfigured):
+            resolve_secret_key('django-insecure-abc', debug=False)
+        self.assertEqual(resolve_secret_key('s3cret-value', debug=False), 's3cret-value')
+        self.assertTrue(resolve_secret_key('', debug=True).startswith('django-insecure'))
