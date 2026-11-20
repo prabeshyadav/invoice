@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import CustomerForm, { type CustomerPayload } from "@/components/CustomerForm";
 import { RequireAuth } from "@/lib/auth";
 import { apiErrorMessage, apiFetch } from "@/lib/api";
-import { ErrorBanner, PageTitle } from "@/components/ui";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { ErrorBanner, PageHeader } from "@/components/ui";
 
 export default function NewCustomerPage() {
   return (
@@ -31,16 +31,15 @@ function NewCustomerBody() {
       router.replace(`/customers/${created.id}`);
     } catch (e) {
       setError(apiErrorMessage(e));
-    } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="max-w-2xl">
-      <PageTitle title="Add customer" />
+    <div className="max-w-3xl">
+      <PageHeader back={{ href: "/customers", label: "Customers" }} title="Add customer" />
       <ErrorBanner message={error} />
-      <CustomerForm onSubmit={onSubmit} busy={busy} submitLabel="Create" />
+      <CustomerForm onSubmit={onSubmit} busy={busy} submitLabel="Create customer" cancelHref="/customers" />
     </div>
   );
 }
