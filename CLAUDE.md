@@ -18,6 +18,7 @@ docker compose up -d --build frontend                # rebuild the UI after fron
 - Settings default to **production**: `DEBUG` is off and a real `SECRET_KEY` is required (`invoice/env.py::resolve_secret_key`). The dev compose sets `DEBUG=True`; running `manage.py` outside it needs `DEBUG=True` too.
 - Production: `docker compose -f docker-compose.prod.yml up -d --build` (Postgres, gunicorn, WhiteNoise, Redis cache). Required `.env` variables are listed in README → "Production deployment". Health check: `GET /api/health/`.
 - Login and register are rate-limited (`throttle_scope = 'auth'`, `management/auth_views.py`). Tests that hit them repeatedly should `cache.clear()` in `setUp`.
+- Accounts: with `EMAIL_VERIFICATION_REQUIRED` (default on) new users are inactive until they open the emailed `/verify-email` link. Password reset emails a `/reset-password` link. Links use `FRONTEND_URL`. Logic is in `management/account.py`; views in `auth_views.py`. Dev compose prints emails to `docker compose logs backend` (console backend) unless `EMAIL_BACKEND` is set. Request endpoints (reset, resend) always return the same response so they can't be used to discover accounts.
 
 Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/eslint lib components app` and `npm run build`.
 
@@ -46,7 +47,7 @@ Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/esli
 ## Domain gotchas
 
 - Money is `DecimalField` (2 places), and the API returns it as strings such as `"12.50"`. Round with `money()` in `management/models.py` (cents, half up). Never use floats for money.
-- Each invoice has its own `discount_percent` and `tax_percent` (0–100, default 0). Totals: `sub_total` → minus `discount_amount` = `discounted_total_amount` (taxable) → plus `tax_amount` = `total`. Show `total` as the amount due. The live preview in `components/InvoiceForm.tsx` mirrors this order and rounding, so change both together. Migration 0022 set `discount_percent=10` on invoices created before it, to keep their old hard-coded discount.
+- Each invoice has its own `discount_percent` and `tax_percent` (0–100, default 0). Totals: `sub_total` → minus `discount_amount` = `discounted_total_amount` (taxable) → plus `tax_amount` = `total`. Show `total` as the amount due. The live preview in `components/InvoiceForm.tsx` mirrors this order and rounding, so change both together. Migration 0025 set `discount_percent=10` on invoices created before it, to keep their old hard-coded discount.
 - Invoice numbers are generated as `KIT-101`, `KIT-102`, … (`management/utils.py`) when none is given.
 - "Overdue" is not stored. It is derived on the frontend (`displayStatus`) when status ≠ `paid` and the due date is past. The stored statuses are `draft`, `sent` and `paid`.
 - Choice values (currencies, salutations and so on) are duplicated in `invoice/commons.py` and `frontend/lib/api.ts`. Keep them in sync.
