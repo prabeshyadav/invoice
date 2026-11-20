@@ -1,4 +1,5 @@
 import importlib
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -6,11 +7,14 @@ from unittest.mock import patch
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils.module_loading import import_string
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
@@ -18,6 +22,7 @@ from rest_framework.throttling import SimpleRateThrottle
 from invoice.env import resolve_secret_key
 
 from . import tasks
+from .account import email_verification_token
 from .models import AddCustomer, Invoice, Items, TableItems
 
 
@@ -343,3 +348,138 @@ class ProductionReadinessTests(TestCase):
             resolve_secret_key('django-insecure-abc', debug=False)
         self.assertEqual(resolve_secret_key('s3cret-value', debug=False), 's3cret-value')
         self.assertTrue(resolve_secret_key('', debug=True).startswith('django-insecure'))
+
+
+@override_settings(FRONTEND_URL='http://app.test')
+class AccountEmailTests(TestCase):
+    PASSWORD = 'Str0ng-pass-2026'
+
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient()
+
+    def tearDown(self):
+        cache.clear()
+
+    def _link_params(self, message):
+        match = re.search(r'http://app\.test/[\w-]+\?uid=([\w-]+)&token=([\w-]+)', message.body)
+        self.assertIsNotNone(match, message.body)
+        return {'uid': match.group(1), 'token': match.group(2)}
+
+    def _login(self, username, password):
+        return self.client.post('/api/auth/token/', {'username': username, 'password': password}, format='json')
+
+    # Password reset
+
+    def test_reset_request_is_generic_and_only_mails_existing_users(self):
+        User.objects.create_user('alice', 'alice@example.com', self.PASSWORD)
+        known = self.client.post('/api/auth/password-reset/', {'email': 'ALICE@example.com'}, format='json')
+        unknown = self.client.post('/api/auth/password-reset/', {'email': 'nobody@example.com'}, format='json')
+        self.assertEqual(known.status_code, 200)
+        self.assertEqual(unknown.status_code, 200)
+        self.assertEqual(known.data, unknown.data)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['alice@example.com'])
+        self.assertIn('http://app.test/reset-password?uid=', mail.outbox[0].body)
+        self.assertIn('/reset-password?uid=', mail.outbox[0].alternatives[0][0])
+
+    def test_reset_confirm_changes_password(self):
+        User.objects.create_user('alice', 'alice@example.com', self.PASSWORD)
+        self.client.post('/api/auth/password-reset/', {'email': 'alice@example.com'}, format='json')
+        params = self._link_params(mail.outbox[0])
+        res = self.client.post('/api/auth/password-reset/confirm/', {**params, 'new_password': 'An0ther-pass-2026'}, format='json')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertEqual(self._login('alice', 'An0ther-pass-2026').status_code, 200)
+        self.assertEqual(self._login('alice', self.PASSWORD).status_code, 401)
+        # The token is single-use: the password hash changed.
+        again = self.client.post('/api/auth/password-reset/confirm/', {**params, 'new_password': 'Th1rd-pass-2026'}, format='json')
+        self.assertEqual(again.status_code, 400)
+
+    def test_reset_confirm_rejects_bad_token_and_weak_password(self):
+        user = User.objects.create_user('alice', 'alice@example.com', self.PASSWORD)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        bad = self.client.post('/api/auth/password-reset/confirm/', {'uid': uid, 'token': 'bad-token', 'new_password': 'An0ther-pass-2026'}, format='json')
+        self.assertEqual(bad.status_code, 400)
+        self.assertIn('token', bad.data)
+        garbage_uid = self.client.post('/api/auth/password-reset/confirm/', {'uid': '!!', 'token': 'x', 'new_password': 'An0ther-pass-2026'}, format='json')
+        self.assertEqual(garbage_uid.status_code, 400)
+        token = default_token_generator.make_token(user)
+        weak = self.client.post('/api/auth/password-reset/confirm/', {'uid': uid, 'token': token, 'new_password': '12345'}, format='json')
+        self.assertEqual(weak.status_code, 400)
+        self.assertIn('new_password', weak.data)
+
+    def test_verification_token_cannot_reset_password(self):
+        user = User.objects.create_user('alice', 'alice@example.com', self.PASSWORD)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = email_verification_token.make_token(user)
+        res = self.client.post('/api/auth/password-reset/confirm/', {'uid': uid, 'token': token, 'new_password': 'An0ther-pass-2026'}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    # Email verification
+
+    def _register(self, username='newbie', email='newbie@example.com'):
+        return self.client.post('/api/auth/register/', {
+            'username': username, 'email': email, 'password': self.PASSWORD,
+        }, format='json')
+
+    def test_register_requires_verification_before_login(self):
+        res = self._register()
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertTrue(res.data['verification_required'])
+        self.assertNotIn('access', res.data)
+        self.assertFalse(User.objects.get(username='newbie').is_active)
+        self.assertEqual(mail.outbox[0].to, ['newbie@example.com'])
+
+        login = self._login('newbie', self.PASSWORD)
+        self.assertEqual(login.status_code, 401)
+        self.assertEqual(str(login.data['detail']), 'Please verify your email before signing in.')
+        # A wrong password must not reveal that the account exists but is unverified.
+        wrong = self._login('newbie', 'not-the-password')
+        self.assertNotEqual(str(wrong.data['detail']), 'Please verify your email before signing in.')
+
+        verify = self.client.post('/api/auth/verify-email/', self._link_params(mail.outbox[0]), format='json')
+        self.assertEqual(verify.status_code, 200, verify.data)
+        self.assertTrue(User.objects.get(username='newbie').is_active)
+        self.assertEqual(self._login('newbie', self.PASSWORD).status_code, 200)
+        # The link stops working once used.
+        reused = self.client.post('/api/auth/verify-email/', self._link_params(mail.outbox[0]), format='json')
+        self.assertEqual(reused.status_code, 400)
+
+    def test_register_requires_email_and_strong_password(self):
+        no_email = self.client.post('/api/auth/register/', {'username': 'x', 'password': self.PASSWORD}, format='json')
+        self.assertEqual(no_email.status_code, 400)
+        self.assertIn('email', no_email.data)
+        weak = self.client.post('/api/auth/register/', {'username': 'x', 'email': 'x@example.com', 'password': 'password'}, format='json')
+        self.assertEqual(weak.status_code, 400)
+        self.assertIn('password', weak.data)
+
+    def test_verify_rejects_bad_token(self):
+        self._register()
+        user = User.objects.get(username='newbie')
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        res = self.client.post('/api/auth/verify-email/', {'uid': uid, 'token': 'nope'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(User.objects.get(username='newbie').is_active)
+
+    def test_resend_is_generic_and_only_mails_unverified(self):
+        self._register()
+        User.objects.create_user('active', 'active@example.com', self.PASSWORD)
+        mail.outbox.clear()
+        responses = [
+            self.client.post('/api/auth/verify-email/resend/', {'email': e}, format='json')
+            for e in ('newbie@example.com', 'active@example.com', 'nobody@example.com')
+        ]
+        self.assertEqual({r.status_code for r in responses}, {200})
+        self.assertEqual(len({str(r.data) for r in responses}), 1)
+        self.assertEqual([m.to for m in mail.outbox], [['newbie@example.com']])
+        verify = self.client.post('/api/auth/verify-email/', self._link_params(mail.outbox[0]), format='json')
+        self.assertEqual(verify.status_code, 200)
+
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=False)
+    def test_register_without_verification_is_active_immediately(self):
+        res = self._register()
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertFalse(res.data['verification_required'])
+        self.assertTrue(User.objects.get(username='newbie').is_active)
+        self.assertEqual(mail.outbox, [])
+        self.assertEqual(self._login('newbie', self.PASSWORD).status_code, 200)
