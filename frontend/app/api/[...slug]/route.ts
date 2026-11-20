@@ -12,6 +12,7 @@ import {
   ACCESS_COOKIE,
   API_URL,
   REFRESH_COOKIE,
+  backendHeaders,
   clearSessionCookies,
   forbidden,
   isSameOrigin,
@@ -40,7 +41,7 @@ async function proxy(
   const contentType = request.headers.get("content-type");
 
   const send = (access: string | undefined) => {
-    const headers = new Headers();
+    const headers = backendHeaders(request);
     if (contentType) headers.set("content-type", contentType);
     if (access) headers.set("authorization", `Bearer ${access}`);
     return fetch(target, { method: request.method, headers, body });
@@ -52,7 +53,7 @@ async function proxy(
 
   const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
   if (upstream.status === 401 && refresh) {
-    refreshedAccess = await refreshAccess(refresh);
+    refreshedAccess = await refreshAccess(request, refresh);
     if (refreshedAccess) upstream = await send(refreshedAccess);
     else sessionExpired = true;
   }
