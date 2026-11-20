@@ -7,6 +7,7 @@ from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.utils.module_loading import import_string
 from rest_framework.test import APIClient
@@ -130,6 +131,23 @@ class MoneyTests(TestCase):
         invoice.refresh_from_db()
         self.assertEqual(invoice.discount_percent, Decimal('10'))
         self.assertEqual(invoice.total, Decimal('90.00'))
+
+    def test_pdf_and_reminder_templates_show_tax_and_total(self):
+        invoice = make_invoice(self.customer, 'KIT-101')  # 2 x 50
+        invoice.discount_percent, invoice.tax_percent = Decimal('10'), Decimal('13')
+        invoice.save()
+        pdf_html = render_to_string('invoice_pdf.html', {
+            'invoice_object': invoice, 'invoice_items': invoice.tableitems_set.all(),
+        })
+        # 100 - 10 = 90; 13% tax = 11.70; total 101.70
+        self.assertIn('Discount (10%)', pdf_html)
+        self.assertIn('Tax (13%)', pdf_html)
+        self.assertIn('11.70', pdf_html)
+        self.assertIn('NPR 101.70', pdf_html)
+        email_html = render_to_string('email_templates/due_date_email.html', {
+            'invoice': invoice, 'customer': self.customer,
+        })
+        self.assertIn('101.70', email_html)
 
 
 class DueDateReminderTests(TestCase):
