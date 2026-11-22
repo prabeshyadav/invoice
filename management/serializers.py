@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 
-from .models import AddCustomer, Invoice, Items, TableItems
+from .models import AddCustomer, Invoice, InvoiceActivity, Items, OrganizationProfile, Payment, TableItems
 from .utils import new_invoice_number
 
 
@@ -61,6 +61,9 @@ class AddCustomerSerializer(serializers.ModelSerializer):
             'email', 'phone', 'website', 'mobile', 'Portal_Language',
             'facebook', 'twitter',
         ]
+        extra_kwargs = {
+            'phone': {'required': False, 'allow_blank': True},
+        }
 
 
 class TableItemsSerializer(serializers.ModelSerializer):
@@ -80,13 +83,40 @@ class TableItemsSerializer(serializers.ModelSerializer):
         extra_kwargs = {'invoice': {'required': False}}
 
 
+class PaymentSerializer(serializers.ModelSerializer):
+    invoice = OwnedPrimaryKeyRelatedField(queryset=Invoice.objects.all())
+
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'invoice', 'amount', 'payment_date', 'payment_method',
+            'reference', 'notes', 'created_at',
+        ]
+
+    def validate_amount(self, value):
+        from decimal import Decimal
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError('Payment amount must be greater than zero.')
+        return value
+
+
+class InvoiceActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceActivity
+        fields = ['id', 'activity_type', 'message', 'created_at']
+
+
 class InvoiceSerializer(serializers.ModelSerializer):
     line_items = TableItemsSerializer(many=True, source='tableitems_set', required=False)
+    payments = PaymentSerializer(many=True, read_only=True)
+    activities = InvoiceActivitySerializer(many=True, read_only=True)
     sub_total = money_field()
     discount_amount = money_field()
     discounted_total_amount = money_field()
     tax_amount = money_field()
     total = money_field()
+    amount_paid = money_field()
+    balance_due = money_field()
     customer_display_name = serializers.CharField(
         source='customer_name.customer_display_name', read_only=True
     )
@@ -100,12 +130,18 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
-            'id', 'customer_name', 'customer_display_name', 'invoice_number', 'invoice_date', 'due_date',
-            'subject', 'status', 'discount_percent', 'tax_percent', 'line_items',
+            'id', 'share_token', 'customer_name', 'customer_display_name', 'invoice_number', 'invoice_date', 'due_date',
+            'subject', 'status', 'discount_percent', 'tax_percent', 'notes', 'terms', 'first_viewed_at', 'view_count',
+            'line_items', 'payments', 'activities',
             'sub_total', 'discount_amount', 'discounted_total_amount', 'tax_amount',
-            'total',
+            'total', 'amount_paid', 'balance_due',
         ]
-        extra_kwargs = {'invoice_number': {'required': False}}
+        extra_kwargs = {
+            'invoice_number': {'required': False},
+            'share_token': {'read_only': True},
+            'first_viewed_at': {'read_only': True},
+            'view_count': {'read_only': True},
+        }
 
     def create(self, validated_data):
         items_data = validated_data.pop('tableitems_set', [])
@@ -116,10 +152,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
             for item_data in items_data:
                 item_data.pop('invoice', None)
                 TableItems.objects.create(invoice=invoice, **item_data)
+            InvoiceActivity.objects.create(
+                invoice=invoice,
+                activity_type='created',
+                message=f'Invoice {invoice.invoice_number} created',
+            )
         return invoice
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop('tableitems_set', None)
+        old_status = instance.status
         with _duplicate_number_as_400():
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
@@ -129,6 +171,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 for item_data in items_data:
                     item_data.pop('invoice', None)
                     TableItems.objects.create(invoice=instance, **item_data)
+            if old_status != instance.status:
+                InvoiceActivity.objects.create(
+                    invoice=instance,
+                    activity_type='status',
+                    message=f'Status marked as {instance.get_status_display()}',
+                )
         return instance
 
 
@@ -145,13 +193,52 @@ class DashboardInvoiceSerializer(serializers.ModelSerializer):
         source='customer_name.customer_display_name', read_only=True
     )
     total = money_field()
+    amount_paid = money_field()
+    balance_due = money_field()
 
     class Meta:
         model = Invoice
         fields = [
-            'id', 'customer_name', 'customer_display_name', 'invoice_number',
+            'id', 'share_token', 'customer_name', 'customer_display_name', 'invoice_number',
             'invoice_date', 'due_date', 'subject', 'status', 'total',
+            'amount_paid', 'balance_due', 'first_viewed_at',
         ]
+
+
+class PublicCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AddCustomer
+        fields = ['customer_display_name', 'company_name', 'email', 'phone', 'currency']
+
+
+class PublicInvoiceSerializer(serializers.ModelSerializer):
+    line_items = TableItemsSerializer(many=True, source='tableitems_set', read_only=True)
+    payments = PaymentSerializer(many=True, read_only=True)
+    customer = PublicCustomerSerializer(source='customer_name', read_only=True)
+    organization = serializers.SerializerMethodField()
+    sub_total = money_field()
+    discount_amount = money_field()
+    discounted_total_amount = money_field()
+    tax_amount = money_field()
+    total = money_field()
+    amount_paid = money_field()
+    balance_due = money_field()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'share_token', 'invoice_number', 'invoice_date', 'due_date',
+            'subject', 'status', 'discount_percent', 'tax_percent', 'notes', 'terms', 'line_items', 'payments',
+            'sub_total', 'discount_amount', 'discounted_total_amount', 'tax_amount',
+            'total', 'amount_paid', 'balance_due', 'customer', 'organization',
+        ]
+
+    def get_organization(self, obj):
+        profile, _ = OrganizationProfile.objects.get_or_create(
+            owner=obj.owner,
+            defaults={'company_name': 'InvoicePro', 'email': obj.owner.email}
+        )
+        return OrganizationProfileSerializer(profile).data
 
 
 class ItemsSerializer(serializers.ModelSerializer):
@@ -169,3 +256,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class OrganizationProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizationProfile
+        fields = [
+            'id', 'company_name', 'tax_id', 'email', 'phone',
+            'address', 'website', 'bank_details', 'invoice_notes',
+        ]
+

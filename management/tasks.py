@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from .models import Invoice
+from .models import Invoice, OrganizationProfile
 from .pdf import render_to_pdf
 
 
@@ -41,9 +41,10 @@ def send_due_date_email(invoice_id):
         return
 
     customer = invoice.customer_name
+    share_url = f"{settings.FRONTEND_URL}/invoices/view/{invoice.share_token}"
     html = render_to_string(
         'email_templates/due_date_email.html',
-        {'invoice': invoice, 'customer': customer},
+        {'invoice': invoice, 'customer': customer, 'share_url': share_url},
     )
     email = EmailMultiAlternatives(
         subject=f'Reminder: invoice {invoice.invoice_number} is due on {invoice.due_date:%d %b %Y}',
@@ -51,9 +52,14 @@ def send_due_date_email(invoice_id):
         to=[customer.email],
     )
     email.attach_alternative(html, 'text/html')
+    profile, _ = OrganizationProfile.objects.get_or_create(
+        owner=invoice.owner,
+        defaults={'company_name': 'InvoicePro', 'email': invoice.owner.email}
+    )
     pdf = render_to_pdf('invoice_pdf.html', {
         'invoice_object': invoice,
         'invoice_items': invoice.tableitems_set.all(),
+        'organization': profile,
     })
     if pdf is not None:
         email.attach(f'invoice-{invoice.invoice_number}.pdf', pdf.content, 'application/pdf')
@@ -68,9 +74,14 @@ def send_invoice_email(invoice_id, to, subject, message):
     if invoice is None:
         return
     email = EmailMultiAlternatives(subject=subject, body=message, to=[to])
+    profile, _ = OrganizationProfile.objects.get_or_create(
+        owner=invoice.owner,
+        defaults={'company_name': 'InvoicePro', 'email': invoice.owner.email}
+    )
     pdf = render_to_pdf('invoice_pdf.html', {
         'invoice_object': invoice,
         'invoice_items': invoice.tableitems_set.all(),
+        'organization': profile,
     })
     if pdf is not None:
         email.attach(f'invoice-{invoice.invoice_number}.pdf', pdf.content, 'application/pdf')

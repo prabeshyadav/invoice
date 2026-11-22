@@ -36,8 +36,36 @@ export interface LineItem {
   amount: string;
 }
 
+export interface Payment {
+  id: number;
+  invoice: number;
+  amount: string;
+  payment_date: string;
+  payment_method: string;
+  reference: string;
+  notes: string;
+  created_at: string;
+}
+
+export const PAYMENT_METHODS = [
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "card", label: "Credit/Debit Card" },
+  { value: "cheque", label: "Cheque" },
+  { value: "digital_wallet", label: "Digital Wallet (eSewa / Khalti)" },
+  { value: "other", label: "Other" },
+] as const;
+
+export interface InvoiceActivity {
+  id: number;
+  activity_type: "created" | "updated" | "sent" | "viewed" | "payment" | "payment_deleted" | "reminder" | "status";
+  message: string;
+  created_at: string;
+}
+
 export interface Invoice {
   id: number;
+  share_token: string;
   customer_name: number;
   customer_display_name: string;
   invoice_number: string;
@@ -47,7 +75,13 @@ export interface Invoice {
   status: string;
   discount_percent: string;
   tax_percent: string;
+  notes?: string;
+  terms?: string;
+  first_viewed_at?: string | null;
+  view_count?: number;
   line_items: LineItem[];
+  payments?: Payment[];
+  activities?: InvoiceActivity[];
   /* Money fields are Decimal strings from DRF ("12.50"); use Number()/formatMoney. */
   sub_total: string;
   discount_amount: string;
@@ -55,6 +89,19 @@ export interface Invoice {
   discounted_total_amount: string;
   tax_amount: string;
   total: string;
+  amount_paid: string;
+  balance_due: string;
+}
+
+export interface PublicInvoice extends Omit<Invoice, "customer_name"> {
+  customer: {
+    customer_display_name: string;
+    company_name: string;
+    email: string;
+    phone: string;
+    currency: string;
+  };
+  organization: OrganizationProfile;
 }
 
 export interface CatalogItem {
@@ -65,6 +112,18 @@ export interface CatalogItem {
   selling_price: string;
   tax_rate: string;
   unit: string;
+}
+
+export interface OrganizationProfile {
+  id?: number;
+  company_name: string;
+  tax_id: string;
+  email: string;
+  phone: string;
+  address: string;
+  website: string;
+  bank_details: string;
+  invoice_notes: string;
 }
 
 interface Page<T> {
@@ -147,12 +206,15 @@ export function apiErrorMessage(e: unknown): string {
 
 /* ── Formatting helpers ─────────────────────────────────────────────────── */
 
-export function formatMoney(value: number | string | null | undefined): string {
+export function formatMoney(value: number | string | null | undefined, currency?: string): string {
   const n = Number(value ?? 0);
-  return n.toLocaleString(undefined, {
+  const formatted = n.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  if (!currency) return formatted;
+  const code = currency.split("-")[0].trim();
+  return `${code} ${formatted}`;
 }
 
 /* Round to cents, half up, like the backend (live previews only; the API is authoritative). */
@@ -174,14 +236,29 @@ export function formatDate(iso: string | null | undefined): string {
   });
 }
 
-export function isOverdue(inv: Pick<Invoice, "status" | "due_date">): boolean {
-  if (inv.status === "paid") return false;
+export function isOverdue(
+  inv: Pick<Invoice, "status" | "due_date"> & Partial<Pick<Invoice, "balance_due">>
+): boolean {
+  if (inv.status === "paid" || (inv.balance_due !== undefined && Number(inv.balance_due) <= 0)) {
+    return false;
+  }
   return new Date(`${inv.due_date}T23:59:59`) < new Date();
 }
 
-/* Display status: "overdue" is derived, not stored. */
-export function displayStatus(inv: Pick<Invoice, "status" | "due_date">): string {
+/* Display status: "overdue" and "partially_paid" are derived. */
+export function displayStatus(
+  inv: Pick<Invoice, "status" | "due_date"> & Partial<Pick<Invoice, "amount_paid" | "balance_due">>
+): string {
+  if (
+    inv.status === "paid" ||
+    (inv.balance_due !== undefined && Number(inv.balance_due) <= 0 && Number(inv.amount_paid ?? 0) > 0)
+  ) {
+    return "paid";
+  }
   if (isOverdue(inv)) return "overdue";
+  if (Number(inv.amount_paid ?? 0) > 0 && Number(inv.balance_due ?? 0) > 0) {
+    return "partially_paid";
+  }
   return inv.status || "draft";
 }
 

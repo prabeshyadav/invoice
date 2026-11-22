@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { RequireAuth } from "@/lib/auth";
 import { ITEM_TYPES, apiErrorMessage, apiFetch, formatMoney, formatPercent, listAll, type CatalogItem } from "@/lib/api";
 import Icon from "@/components/Icon";
+import ConfirmModal from "@/components/ConfirmModal";
+import { useToast } from "@/lib/toast";
 import {
   Card,
   EmptyState,
@@ -13,6 +15,7 @@ import {
   SearchInput,
   Spinner,
   btnPrimary,
+  btnSecondary,
   inputCls,
   td,
   th,
@@ -29,8 +32,11 @@ export default function ItemsPage() {
 }
 
 function ItemsBody() {
+  const toast = useToast();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [form, setForm] = useState(EMPTY);
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<CatalogItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,28 +51,68 @@ function ItemsBody() {
 
   const set = <K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  async function onCreate(e: FormEvent) {
+  function startEdit(item: CatalogItem) {
+    setEditingItem(item);
+    setForm({
+      type: item.type || "Services",
+      name: item.name,
+      description: item.description,
+      selling_price: Number(item.selling_price) || 0,
+      tax_rate: Number(item.tax_rate) || 0,
+      unit: item.unit,
+    });
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingItem(null);
+    setForm(EMPTY);
+    setError(null);
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setBusy(true);
     try {
-      const created = await apiFetch<CatalogItem>("/items/", { method: "POST", body: JSON.stringify(form) });
-      setItems((xs) => [created, ...xs]);
-      setForm(EMPTY);
+      if (editingItem) {
+        const updated = await apiFetch<CatalogItem>(`/items/${editingItem.id}/`, {
+          method: "PATCH",
+          body: JSON.stringify(form),
+        });
+        setItems((xs) => xs.map((x) => (x.id === updated.id ? updated : x)));
+        toast.success(`Updated "${updated.name}".`);
+        cancelEdit();
+      } else {
+        const created = await apiFetch<CatalogItem>("/items/", { method: "POST", body: JSON.stringify(form) });
+        setItems((xs) => [created, ...xs]);
+        toast.success(`Added "${created.name}" to catalog.`);
+        setForm(EMPTY);
+      }
     } catch (err) {
-      setError(apiErrorMessage(err));
+      const msg = apiErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
   }
 
-  async function onDelete(item: CatalogItem) {
-    if (!confirm(`Delete "${item.name}" from the catalog?`)) return;
+  async function confirmDelete() {
+    if (!deletingItem) return;
+    setBusy(true);
     try {
-      await apiFetch(`/items/${item.id}/`, { method: "DELETE" });
-      setItems((xs) => xs.filter((x) => x.id !== item.id));
+      await apiFetch(`/items/${deletingItem.id}/`, { method: "DELETE" });
+      setItems((xs) => xs.filter((x) => x.id !== deletingItem.id));
+      toast.success(`Deleted "${deletingItem.name}".`);
+      if (editingItem?.id === deletingItem.id) cancelEdit();
+      setDeletingItem(null);
     } catch (e) {
-      setError(apiErrorMessage(e));
+      const msg = apiErrorMessage(e);
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -80,7 +126,7 @@ function ItemsBody() {
       <PageHeader title="Items" subtitle="Reusable goods and services you can add to invoices in one click." />
       <ErrorBanner message={error} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
         <Card padded={false} className="order-2 xl:order-1">
           {items.length > 0 && (
             <div className="border-b border-line-soft p-4">
@@ -91,7 +137,14 @@ function ItemsBody() {
             <EmptyState
               icon="inventory_2"
               title={items.length ? "No matching items" : "Your catalog is empty"}
-              description={items.length ? "Try a different search term." : "Add products or services you bill often."}
+              description={items.length ? "Try a different search term or clear the filter." : "Add products or services you bill often."}
+              action={
+                search ? (
+                  <button type="button" onClick={() => setSearch("")} className={btnSecondary}>
+                    Clear search
+                  </button>
+                ) : undefined
+              }
             />
           ) : (
             <div className="overflow-x-auto">
@@ -102,7 +155,7 @@ function ItemsBody() {
                     <th className={th}>Type</th>
                     <th className={`${th} text-right`}>Price</th>
                     <th className={`${th} text-right`}>Tax %</th>
-                    <th className={th} />
+                    <th className={`${th} text-right`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,15 +176,27 @@ function ItemsBody() {
                         <span className="text-xs text-muted"> / {it.unit}</span>
                       </td>
                       <td className={`${td} tabular text-right text-muted`}>{formatPercent(it.tax_rate)}</td>
-                      <td className={`${td} w-12 text-right`}>
-                        <button
-                          type="button"
-                          onClick={() => onDelete(it)}
-                          aria-label={`Delete ${it.name}`}
-                          className="rounded-md p-1.5 text-faint opacity-60 transition hover:bg-red-50 hover:text-danger group-hover:opacity-100"
-                        >
-                          <Icon name="delete" className="text-[18px]" />
-                        </button>
+                      <td className={`${td} text-right`}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(it)}
+                            title="Edit item"
+                            aria-label={`Edit ${it.name}`}
+                            className="rounded-md p-1.5 text-faint transition hover:bg-slate-100 hover:text-ink"
+                          >
+                            <Icon name="edit" className="text-[18px]" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingItem(it)}
+                            title="Delete item"
+                            aria-label={`Delete ${it.name}`}
+                            className="rounded-md p-1.5 text-faint transition hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Icon name="delete" className="text-[18px]" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -141,8 +206,8 @@ function ItemsBody() {
           )}
         </Card>
 
-        <Card title="New item" className="order-1 h-fit xl:order-2">
-          <form onSubmit={onCreate} className="space-y-4">
+        <Card title={editingItem ? "Edit item" : "New item"} className="order-1 h-fit xl:order-2">
+          <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-1 rounded-lg bg-line-soft p-1">
               {ITEM_TYPES.map((t) => (
                 <button
@@ -172,7 +237,7 @@ function ItemsBody() {
                   min={0}
                   step="0.01"
                   value={form.selling_price}
-                  onChange={(e) => set("selling_price", Number(e.target.value) || 0)}
+                  onChange={(e) => set("selling_price", Math.max(0, Number(e.target.value) || 0))}
                   required
                 />
               </Field>
@@ -200,17 +265,39 @@ function ItemsBody() {
                 max={100}
                 step="0.01"
                 value={form.tax_rate}
-                onChange={(e) => set("tax_rate", Number(e.target.value) || 0)}
+                onChange={(e) => set("tax_rate", Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
                 required
               />
             </Field>
-            <button type="submit" disabled={busy} className={`${btnPrimary} w-full`}>
-              {busy ? <Spinner inline /> : <Icon name="add" className="text-[18px]" />}
-              {busy ? "Adding…" : "Add item"}
-            </button>
+            <div className="flex gap-2">
+              {editingItem && (
+                <button type="button" onClick={cancelEdit} className={`${btnSecondary} flex-1`}>
+                  Cancel
+                </button>
+              )}
+              <button type="submit" disabled={busy} className={`${btnPrimary} flex-1`}>
+                {busy ? <Spinner inline /> : <Icon name={editingItem ? "check" : "add"} className="text-[18px]" />}
+                {busy ? "Saving…" : editingItem ? "Save changes" : "Add item"}
+              </button>
+            </div>
           </form>
         </Card>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deletingItem}
+        title="Delete catalog item"
+        description={
+          <>
+            Are you sure you want to delete <strong className="text-ink">{deletingItem?.name}</strong> from your
+            catalog? This won&apos;t change past invoices that used this item.
+          </>
+        }
+        confirmText="Delete item"
+        busy={busy}
+        onConfirm={confirmDelete}
+        onClose={() => setDeletingItem(null)}
+      />
     </>
   );
 }
