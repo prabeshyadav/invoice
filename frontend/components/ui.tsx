@@ -5,7 +5,7 @@ import Icon from "./Icon";
 /* ── Class tokens ───────────────────────────────────────────────────────── */
 
 const control =
-  "h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none transition placeholder:text-faint hover:border-slate-300 focus:border-accent focus:ring-4 focus:ring-accent/10 disabled:bg-line-soft disabled:text-muted";
+  "h-10 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink shadow-2xs outline-none transition placeholder:text-faint hover:border-slate-300 focus:border-accent focus:ring-3 focus:ring-accent/15 disabled:bg-line-soft disabled:text-muted";
 
 export const inputCls = control;
 export const selectCls = `${control} cursor-pointer pr-8`;
@@ -14,12 +14,12 @@ export const textareaCls = control.replace("h-10", "min-h-24 py-2");
 const btn =
   "inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-sm font-medium transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50";
 
-export const btnPrimary = `${btn} bg-accent text-white shadow-sm shadow-accent/20 hover:bg-accent-dark`;
-export const btnSecondary = `${btn} border border-line bg-white text-ink-2 shadow-sm hover:border-slate-300 hover:bg-slate-50`;
+export const btnPrimary = `${btn} bg-accent text-white shadow-xs shadow-accent/25 hover:bg-accent-dark active:bg-accent-dark`;
+export const btnSecondary = `${btn} border border-line bg-white text-ink-2 shadow-2xs hover:border-slate-300 hover:bg-slate-50/80 active:bg-slate-100`;
 export const btnGhost = `${btn} text-muted hover:bg-slate-100 hover:text-ink`;
-export const btnDanger = `${btn} border border-red-200 bg-white text-danger hover:border-red-300 hover:bg-red-50`;
+export const btnDanger = `${btn} border border-rose-200 bg-white text-rose-600 shadow-2xs hover:border-rose-300 hover:bg-rose-50/80 active:bg-rose-100`;
 
-export const card = "rounded-xl border border-line bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]";
+export const card = "rounded-xl border border-line bg-surface shadow-2xs";
 
 /* ── Layout ─────────────────────────────────────────────────────────────── */
 
@@ -177,18 +177,19 @@ export function EmptyState({
 
 /* ── Data display ───────────────────────────────────────────────────────── */
 
-const STATUS_STYLES: Record<string, { cls: string; label: string }> = {
-  paid: { cls: "bg-emerald-50 text-emerald-700 ring-emerald-600/20", label: "Paid" },
-  sent: { cls: "bg-blue-50 text-blue-700 ring-blue-600/20", label: "Sent" },
-  draft: { cls: "bg-slate-100 text-slate-600 ring-slate-500/20", label: "Draft" },
-  overdue: { cls: "bg-red-50 text-red-700 ring-red-600/20", label: "Overdue" },
+const STATUS_STYLES: Record<string, { cls: string; dot: string; label: string }> = {
+  paid: { cls: "bg-emerald-50 text-emerald-700 ring-emerald-600/20", dot: "bg-emerald-500", label: "Paid" },
+  partially_paid: { cls: "bg-amber-50 text-amber-800 ring-amber-600/20", dot: "bg-amber-500", label: "Partially Paid" },
+  sent: { cls: "bg-blue-50 text-blue-700 ring-blue-600/20", dot: "bg-blue-500", label: "Sent" },
+  draft: { cls: "bg-slate-100 text-slate-700 ring-slate-500/20", dot: "bg-slate-400", label: "Draft" },
+  overdue: { cls: "bg-rose-50 text-rose-700 ring-rose-600/20", dot: "bg-rose-500", label: "Overdue" },
 };
 
 export function StatusBadge({ status }: { status: string }) {
   const s = STATUS_STYLES[status] ?? STATUS_STYLES.draft;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${s.cls}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${s.cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
   );
@@ -243,15 +244,15 @@ export function StatCard({
     danger: "bg-red-50 text-danger",
   }[tone];
   const inner = (
-    <div className={`${card} h-full p-5 transition ${href ? "hover:border-slate-300 hover:shadow-md" : ""}`}>
+    <div className={`${card} h-full p-5 transition-all duration-150 ${href ? "hover:border-slate-300 hover:shadow-xs" : ""}`}>
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-medium text-muted">{label}</p>
         <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${toneCls}`}>
           <Icon name={icon} className="text-[18px]" />
         </span>
       </div>
-      <p className="tabular mt-3 text-2xl font-semibold tracking-tight text-ink">{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+      <p className="tabular mt-3 text-2xl font-bold tracking-tight text-ink">{value}</p>
+      {hint && <p className="mt-1.5 text-xs text-muted">{hint}</p>}
     </div>
   );
   return href ? <Link href={href}>{inner}</Link> : inner;
@@ -279,8 +280,18 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className={`${inputCls} pl-9`}
+        className={`${inputCls} pl-9 ${value ? "pr-8" : ""}`}
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-faint transition hover:bg-slate-100 hover:text-ink"
+        >
+          <Icon name="close" className="text-[16px]" />
+        </button>
+      )}
     </div>
   );
 }

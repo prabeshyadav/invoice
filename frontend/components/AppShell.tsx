@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/invoices", label: "Invoices", icon: "receipt_long" },
   { href: "/customers", label: "Customers", icon: "group" },
   { href: "/items", label: "Items", icon: "inventory_2" },
+  { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
 function isActive(pathname: string, href: string) {

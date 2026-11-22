@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import InvoiceForm, { type InvoicePayload } from "@/components/InvoiceForm";
 import { RequireAuth } from "@/lib/auth";
+import { useToast } from "@/lib/toast";
 import { apiErrorMessage, apiFetch, listAll, type Customer } from "@/lib/api";
 import { ErrorBanner, PageHeader, Spinner } from "@/components/ui";
 
@@ -19,6 +20,7 @@ export default function NewInvoicePage() {
 
 function NewInvoiceBody() {
   const router = useRouter();
+  const toast = useToast();
   const preselected = Number(useSearchParams().get("customer")) || undefined;
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,7 @@ function NewInvoiceBody() {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      toast.success("Invoice created successfully.");
       router.replace(`/invoices/${created.id}`);
     } catch (e) {
       setError(apiErrorMessage(e));

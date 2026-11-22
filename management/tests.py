@@ -24,7 +24,7 @@ from invoice.env import resolve_secret_key
 
 from . import tasks
 from .account import email_verification_token
-from .models import AddCustomer, Invoice, Items, TableItems
+from .models import AddCustomer, Invoice, InvoiceActivity, Items, TableItems, OrganizationProfile, Payment
 from .utils import new_invoice_number
 
 
@@ -86,8 +86,8 @@ class InvoiceApiTests(TestCase):
         customer = make_customer()
         for n in range(10):
             make_invoice(customer, f'KIT-{101 + n}', items=((1, 10), (2, 20)))
-        # auth user is forced, so: count + invoices + prefetched line items.
-        with self.assertNumQueries(3):
+        # auth user is forced, so: count + invoices + prefetched line items + prefetched payments + prefetched activities.
+        with self.assertNumQueries(5):
             res = self.client.get('/api/invoices/')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['results'][0]['sub_total'], '50.00')
@@ -309,6 +309,16 @@ class OwnerIsolationTests(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn('email', res.data)
 
+    def test_customer_creation_allows_blank_phone(self):
+        payload = {
+            'primary_contact': 'Mr.', 'first_name': 'Jane', 'last_name': 'Doe',
+            'customer_display_name': 'Jane Doe', 'currency': 'AUD', 'phone': '',
+            'mobile': '9800000000', 'email': 'jane@example.com',
+        }
+        res = self.as_bob.post('/api/customers/', payload, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data['phone'], '')
+
 
 class ProductionReadinessTests(TestCase):
     def setUp(self):
@@ -520,11 +530,11 @@ class DashboardTests(TestCase):
     def test_query_count_is_constant(self):
         for n in range(3):
             self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             self._get()
         for n in range(3, 15):
             self._invoice(f'KIT-{101 + n}', 'sent', n, items=((1, 10), (2, 20)))
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             res = self._get()
         self.assertEqual(res.data['invoice_count'], 15)
 
@@ -721,3 +731,284 @@ class ClientIdentityThrottleTests(TestCase):
             other = reset('bob@example.com', '198.51.100.60')
         self.assertEqual(same_email, [200, 200, 429])
         self.assertEqual(other, 200)
+
+
+class OrganizationProfileApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='org_user', password='password123')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_or_create_organization_profile(self):
+        res = self.client.get('/api/organization/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['company_name'], 'InvoicePro')
+        self.assertTrue(OrganizationProfile.objects.filter(owner=self.user).exists())
+
+    def test_update_organization_profile(self):
+        res = self.client.post('/api/organization/', {
+            'company_name': 'Acme Corp',
+            'tax_id': 'VAT-998877',
+            'email': 'billing@acme.com',
+            'phone': '+977-9800000000',
+            'address': 'Kathmandu, Nepal',
+            'website': 'https://acme.com',
+            'bank_details': 'Nabil Bank\nA/C: 1234567890',
+            'invoice_notes': 'Thank you for your business.',
+        }, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['company_name'], 'Acme Corp')
+        self.assertEqual(res.data['tax_id'], 'VAT-998877')
+
+        # Verify persisted
+        profile = OrganizationProfile.objects.get(owner=self.user)
+        self.assertEqual(profile.company_name, 'Acme Corp')
+        self.assertEqual(profile.tax_id, 'VAT-998877')
+
+
+class InvoiceDuplicateApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='dup_user', password='password123')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.customer = make_customer(owner=self.user)
+        self.invoice = make_invoice(self.customer, 'KIT-501', items=[(2, 50), (1, 100)])
+        self.invoice.status = 'paid'
+        self.invoice.save()
+
+    def test_duplicate_invoice_creates_draft_with_cloned_items(self):
+        res = self.client.post(f'/api/invoices/{self.invoice.id}/duplicate/')
+        self.assertEqual(res.status_code, 201)
+        data = res.data
+        self.assertEqual(data['status'], 'draft')
+        self.assertNotEqual(data['id'], self.invoice.id)
+        self.assertNotEqual(data['invoice_number'], self.invoice.invoice_number)
+        self.assertEqual(len(data['line_items']), 2)
+        self.assertEqual(Decimal(data['total']), Decimal('200.00'))
+
+    def test_duplicate_other_user_invoice_denied(self):
+        other_user = User.objects.create_user(username='other_dup', password='password123')
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        res = other_client.post(f'/api/invoices/{self.invoice.id}/duplicate/')
+        self.assertEqual(res.status_code, 404)
+
+
+class PaymentApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='pay_user', password='password123')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.customer = make_customer(owner=self.user)
+        self.invoice = make_invoice(self.customer, 'KIT-901', items=[(1, 100)])  # total = 100.00
+        self.invoice.status = 'sent'
+        self.invoice.save()
+
+    def test_partial_payment_updates_balance_due(self):
+        res = self.client.post('/api/payments/', {
+            'invoice': self.invoice.id,
+            'amount': '40.00',
+            'payment_date': '2026-01-15',
+            'payment_method': 'bank_transfer',
+            'reference': 'TX-12345',
+            'notes': 'First installment',
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+
+        # Check invoice
+        inv_res = self.client.get(f'/api/invoices/{self.invoice.id}/')
+        self.assertEqual(inv_res.status_code, 200)
+        self.assertEqual(inv_res.data['amount_paid'], '40.00')
+        self.assertEqual(inv_res.data['balance_due'], '60.00')
+        self.assertEqual(len(inv_res.data['payments']), 1)
+        self.assertEqual(inv_res.data['status'], 'sent')
+
+    def test_full_payment_automatically_marks_invoice_paid(self):
+        res = self.client.post('/api/payments/', {
+            'invoice': self.invoice.id,
+            'amount': '100.00',
+            'payment_date': '2026-01-15',
+            'payment_method': 'cash',
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+
+        inv_res = self.client.get(f'/api/invoices/{self.invoice.id}/')
+        self.assertEqual(inv_res.data['amount_paid'], '100.00')
+        self.assertEqual(inv_res.data['balance_due'], '0.00')
+        self.assertEqual(inv_res.data['status'], 'paid')
+
+    def test_delete_payment_reverts_status_if_balance_remains(self):
+        # Create full payment
+        pay = Payment.objects.create(
+            owner=self.user,
+            invoice=self.invoice,
+            amount=Decimal('100.00'),
+            payment_method='cash',
+        )
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'paid')
+
+        # Delete payment
+        del_res = self.client.delete(f'/api/payments/{pay.id}/')
+        self.assertEqual(del_res.status_code, 204)
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, 'sent')
+        self.assertEqual(self.invoice.balance_due, Decimal('100.00'))
+
+    def test_payment_for_another_user_invoice_denied(self):
+        other_user = User.objects.create_user(username='other_pay', password='password123')
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+
+        res = other_client.post('/api/payments/', {
+            'invoice': self.invoice.id,
+            'amount': '50.00',
+        }, format='json')
+        self.assertEqual(res.status_code, 400)
+
+
+class PublicInvoiceApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='pub_user', password='password123')
+        self.customer = make_customer(owner=self.user)
+        self.invoice = make_invoice(self.customer, 'KIT-777', items=[(2, 50)])
+        self.client = APIClient()  # Unauthenticated!
+
+    def test_unauthenticated_client_can_view_invoice_by_share_token(self):
+        res = self.client.get(f'/api/public-invoices/{self.invoice.share_token}/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['invoice_number'], 'KIT-777')
+        self.assertEqual(res.data['total'], '100.00')
+        self.assertEqual(res.data['customer']['customer_display_name'], 'Customer 1')
+        self.assertIn('organization', res.data)
+
+    def test_unauthenticated_client_with_invalid_token_gets_404(self):
+        import uuid
+        res = self.client.get(f'/api/public-invoices/{uuid.uuid4()}/')
+        self.assertEqual(res.status_code, 404)
+
+    def test_unauthenticated_client_can_download_pdf_by_share_token(self):
+        res = self.client.get(f'/api/public-invoices/{self.invoice.share_token}/pdf/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+
+
+class CsvExportApiTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='csv_user', password='password123')
+        self.customer = make_customer(owner=self.user)
+        self.invoice = make_invoice(self.customer, 'KIT-888', items=[(1, 150)])
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_export_invoices_csv(self):
+        res = self.client.get('/api/invoices/export_csv/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'text/csv')
+        content = res.content.decode('utf-8')
+        self.assertIn('Invoice Number,Customer,Invoice Date', content)
+        self.assertIn('KIT-888', content)
+
+    def test_export_customers_csv(self):
+        res = self.client.get('/api/customers/export_csv/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'text/csv')
+        content = res.content.decode('utf-8')
+        self.assertIn('Display Name,First Name,Last Name', content)
+        self.assertIn(self.customer.customer_display_name, content)
+
+
+class InvoiceActivityAndFeaturesTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='activity_user', password='password123')
+        self.customer = make_customer(owner=self.user)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_creating_invoice_logs_created_activity(self):
+        payload = {
+            'customer_name': self.customer.id,
+            'invoice_number': 'INV-ACT-001',
+            'invoice_date': '2026-03-01',
+            'due_date': '2026-03-31',
+            'subject': 'Consulting',
+            'status': 'draft',
+            'notes': 'Thank you!',
+            'terms': 'Net 30 days',
+            'line_items': [{'items_details': 'Development', 'quantity': '10', 'rate': '100.00'}],
+        }
+        res = self.client.post('/api/invoices/', payload, format='json')
+        self.assertEqual(res.status_code, 201)
+        invoice = Invoice.objects.get(pk=res.data['id'])
+        self.assertEqual(invoice.notes, 'Thank you!')
+        self.assertEqual(invoice.terms, 'Net 30 days')
+        self.assertTrue(invoice.activities.filter(activity_type='created').exists())
+
+    def test_send_email_updates_status_and_logs_sent_activity(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-002')
+        with patch('management.api.send_invoice_email.delay') as mock_task:
+            res = self.client.post(f'/api/invoices/{invoice.id}/send_email/', {'to': 'client@example.com'})
+            self.assertEqual(res.status_code, 202)
+            mock_task.assert_called_once()
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.status, 'sent')
+        self.assertTrue(invoice.activities.filter(activity_type='sent').exists())
+
+    def test_send_reminder_action(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-003')
+        invoice.status = 'sent'
+        invoice.save()
+        with patch('management.api.send_due_date_email.delay') as mock_task:
+            res = self.client.post(f'/api/invoices/{invoice.id}/send_reminder/')
+            self.assertEqual(res.status_code, 200)
+            mock_task.assert_called_once_with(invoice.id)
+        self.assertTrue(invoice.activities.filter(activity_type='reminder').exists())
+
+    def test_send_reminder_on_paid_invoice_returns_400(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-004')
+        invoice.status = 'paid'
+        invoice.save()
+        res = self.client.post(f'/api/invoices/{invoice.id}/send_reminder/')
+        self.assertEqual(res.status_code, 400)
+
+    def test_payment_recording_and_deletion_logs_activity(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-005', items=[(1, 100)])
+        res = self.client.post('/api/payments/', {
+            'invoice': invoice.id,
+            'amount': '50.00',
+            'payment_method': 'bank_transfer',
+            'reference': 'TXN-999',
+        })
+        self.assertEqual(res.status_code, 201)
+        payment_id = res.data['id']
+        self.assertTrue(invoice.activities.filter(activity_type='payment').exists())
+
+        del_res = self.client.delete(f'/api/payments/{payment_id}/')
+        self.assertEqual(del_res.status_code, 204)
+        self.assertTrue(invoice.activities.filter(activity_type='payment_deleted').exists())
+
+    def test_public_view_tracks_views_and_activity(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-006')
+        public_client = APIClient()  # unauthenticated
+        res = public_client.get(f'/api/public-invoices/{invoice.share_token}/')
+        self.assertEqual(res.status_code, 200)
+        invoice.refresh_from_db()
+        self.assertIsNotNone(invoice.first_viewed_at)
+        self.assertEqual(invoice.view_count, 1)
+        self.assertTrue(invoice.activities.filter(activity_type='viewed').exists())
+
+    def test_duplicate_invoice_copies_notes_and_terms(self):
+        invoice = make_invoice(self.customer, 'INV-ACT-007')
+        invoice.notes = 'Special note'
+        invoice.terms = 'Payment within 7 days'
+        invoice.save()
+        res = self.client.post(f'/api/invoices/{invoice.id}/duplicate/')
+        self.assertEqual(res.status_code, 201)
+        new_inv = Invoice.objects.get(pk=res.data['id'])
+        self.assertEqual(new_inv.notes, 'Special note')
+        self.assertEqual(new_inv.terms, 'Payment within 7 days')
+
+
+
+

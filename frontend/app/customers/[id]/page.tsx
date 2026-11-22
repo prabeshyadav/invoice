@@ -16,7 +16,10 @@ import {
   type Invoice,
 } from "@/lib/api";
 import CustomerForm, { type CustomerPayload } from "@/components/CustomerForm";
+import ConfirmModal from "@/components/ConfirmModal";
 import Icon from "@/components/Icon";
+import { PieChart, type ChartSegment } from "@/components/Charts";
+import { useToast } from "@/lib/toast";
 import {
   Avatar,
   Card,
@@ -59,12 +62,14 @@ function InfoRow({ icon, label, children }: { icon: string; label: string; child
 function CustomerDetailBody() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     Promise.all([apiFetch<Customer>(`/customers/${id}/`), listAll<Invoice>(`/invoices/?customer=${id}`)])
@@ -82,22 +87,26 @@ function CustomerDetailBody() {
     try {
       setCustomer(await apiFetch<Customer>(`/customers/${id}/`, { method: "PATCH", body: JSON.stringify(payload) }));
       setEditing(false);
+      toast.success("Customer updated successfully.");
     } catch (e) {
-      setError(apiErrorMessage(e));
+      const msg = apiErrorMessage(e);
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
   }
 
   async function onDelete() {
-    const n = invoices.length;
-    if (!confirm(`Delete this customer${n ? ` and their ${n} invoice${n === 1 ? "" : "s"}` : ""}? This cannot be undone.`)) return;
     setBusy(true);
     try {
       await apiFetch(`/customers/${id}/`, { method: "DELETE" });
+      toast.success("Customer deleted.");
       router.replace("/customers");
     } catch (e) {
-      setError(apiErrorMessage(e));
+      const msg = apiErrorMessage(e);
+      setError(msg);
+      toast.error(msg);
       setBusy(false);
     }
   }
@@ -107,9 +116,27 @@ function CustomerDetailBody() {
 
   const name = customerName(customer);
   const total = invoices.reduce((s, i) => s + Number(i.total), 0);
-  const outstanding = invoices
-    .filter((i) => i.status !== "paid")
-    .reduce((s, i) => s + Number(i.total), 0);
+  const outstanding = invoices.reduce(
+    (s, i) => s + Number(i.balance_due ?? (i.status === "paid" ? 0 : i.total)),
+    0
+  );
+  const collected = invoices.reduce(
+    (s, i) => s + Number(i.amount_paid ?? (i.status === "paid" ? i.total : 0)),
+    0
+  );
+
+  const overdueAmount = invoices
+    .filter((i) => displayStatus(i) === "overdue")
+    .reduce((s, i) => s + Number(i.balance_due ?? i.total), 0);
+  const remainingOutstanding = Math.max(0, outstanding - overdueAmount);
+
+  const customerSegments: ChartSegment[] = [
+    { label: "Collected", value: collected, color: "#10b981" },
+    { label: "Outstanding", value: remainingOutstanding, color: "#3b82f6" },
+    ...(overdueAmount > 0
+      ? [{ label: "Overdue", value: overdueAmount, color: "#f43f5e" }]
+      : []),
+  ].filter((s) => s.value > 0);
 
   if (editing) {
     return (
@@ -169,17 +196,23 @@ function CustomerDetailBody() {
               </InfoRow>
             </dl>
           </div>
-          <button type="button" onClick={onDelete} disabled={busy} className={`${btnDanger} w-full`}>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            disabled={busy}
+            className={`${btnDanger} w-full`}
+          >
             <Icon name="delete" className="text-[18px]" />
             Delete customer
           </button>
         </aside>
 
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
               ["Invoices", String(invoices.length)],
               ["Total billed", formatMoney(total)],
+              ["Collected", formatMoney(collected)],
               ["Outstanding", formatMoney(outstanding)],
             ].map(([label, value]) => (
               <div key={label} className={`${card} p-4`}>
@@ -188,6 +221,18 @@ function CustomerDetailBody() {
               </div>
             ))}
           </div>
+
+          {invoices.length > 0 && total > 0 && customerSegments.length > 0 && (
+            <Card
+              title="Payment Breakdown"
+              description={`Share of collected vs outstanding balances (${customer.currency})`}
+            >
+              <PieChart
+                segments={customerSegments}
+                size={160}
+              />
+            </Card>
+          )}
 
           <Card title="Invoices" padded={false}>
             {invoices.length === 0 ? (
@@ -237,6 +282,29 @@ function CustomerDetailBody() {
           </Card>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Delete customer"
+        description={
+          <>
+            Are you sure you want to delete <strong className="text-ink">{name}</strong>
+            {invoices.length > 0 && (
+              <>
+                {" "}and their{" "}
+                <strong className="text-ink">
+                  {invoices.length} invoice{invoices.length === 1 ? "" : "s"}
+                </strong>
+              </>
+            )}
+            ? This action cannot be undone.
+          </>
+        }
+        confirmText="Delete customer"
+        busy={busy}
+        onConfirm={onDelete}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </>
   );
 }

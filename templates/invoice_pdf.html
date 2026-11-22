@@ -38,11 +38,18 @@
           <tbody>
             <tr>
               <td style="vertical-align: top; width: 50%;">
-                <img src="https://kantipurinfotech.com/wp-content/uploads/2023/08/Property-1Default.png" style="width: 210px; height:100px;" alt="logo image">
+                <div style="display: inline-block;">
+                  <span style="font-size: 22pt; font-weight: bold; color: #4f46e5; letter-spacing: -0.5px;">{{ organization.company_name|default:"InvoicePro" }}</span>
+                  {% if organization.tax_id %}
+                  <div style="font-size: 8.5pt; color: #334155; margin-top: 2px;">PAN / VAT: <strong>{{ organization.tax_id }}</strong></div>
+                  {% endif %}
+                  {% if organization.address %}
+                  <div style="font-size: 8pt; color: #64748b; margin-top: 2px;">{{ organization.address }}</div>
+                  {% endif %}
+                </div>
               </td>
               <td style="width:50%; text-align: right; vertical-align: top;">
-                <span style="font-size: 28pt;
-                color: #000000;">INVOICE</span>
+                <span style="font-size: 26pt; font-weight: bold; color: #0f172a; letter-spacing: 1px;">INVOICE</span>
               </td>
             </tr>
           </tbody>
@@ -53,7 +60,7 @@
               <td style="width: 60%; line-height:18px">
                 <div class="billto-section" style="margin:0; padding:0;">
                   <p style="font-size: 12px; margin-bottom: 0; color: #333333; margin:0; padding:0;">INVOICE TO </p>
-                  <p style="color: #000;font-size: 18px;font-weight: 590; margin:0; padding-bottom:5px;">{{invoice_object.customer_name}}
+                  <p style="color: #000;font-size: 18px;font-weight: 590; margin:0; padding-bottom:5px;">{{ invoice_object.customer_name.customer_display_name|default:invoice_object.customer_name }}
                     </p>
                   <div class="pdf-website"
                     style="color: #646464;font-size: 10px;font-weight: 400; margin:0; padding:0;">
@@ -186,10 +193,20 @@
                   <span id="pdf_tax">NPR
                     {{ invoice_object.tax_amount }}</span>
                 </div>
+                <div style="padding: 5px 0; margin:0; border-top: 1px solid #eee;">
+                  <span><b>Total &nbsp;</b></span>
+                  <span><b>NPR {{ invoice_object.total }}</b></span>
+                </div>
+                {% if invoice_object.amount_paid > 0 %}
+                <div style="padding: 5px 0; margin:0; color: #059669;">
+                  <span>Amount Paid &nbsp;</span>
+                  <span>−NPR {{ invoice_object.amount_paid }}</span>
+                </div>
+                {% endif %}
                 <div style="height:40px; background-color: #f7f7f7; width: 100%; padding:5px 0;margin: 0;"
                   class="pcs-balance">
                   <span><b>Balance Due &nbsp;</b></span>
-                  <span id="pdf_balance_due"><b>NPR {{ invoice_object.total }}</b></span>
+                  <span id="pdf_balance_due"><b>NPR {{ invoice_object.balance_due }}</b></span>
                 </div>
               </td>
 
@@ -201,10 +218,10 @@
         <table style="width: 100%; table-layout: fixed;clear:both; margin-top:40px;" class="itemtable">
           <thead>
             <tr style="height:32px; border-bottom: 1px solid #adadad; color: #444; font-weight: 500;">
-              <td style="padding: 0;width: 75%;text-align: left;   font-size: 16px; color: #121212;" id="">
-                Terms and Conditions
+              <td style="padding: 0;width: 65%;text-align: left;   font-size: 14px; color: #121212;" id="">
+                Payment Instructions &amp; Notes
               </td>
-              <td style="padding: 0;width: 25%;text-align: right;   font-size: 16px; color: #121212;
+              <td style="padding: 0;width: 35%;text-align: right;   font-size: 14px; color: #121212;
                     " id="">
                 Amount Due
               </td>
@@ -213,36 +230,52 @@
           </thead>
           <tbody class="tables">
             <tr style="padding:10px 0;">
-              <td rowspan="1" valign="top" style="text-align: left;word-wrap: break-word; color:#646464;"
-                class="pdf-item-row"> Please follow the details mentioned on your contract.
+              <td rowspan="1" valign="top" style="text-align: left;word-wrap: break-word; color:#475569; font-size: 9pt; line-height: 1.4;"
+                class="pdf-item-row">
+                {% if organization and organization.bank_details %}
+                <div style="margin-bottom: 6px;"><strong>Bank / Payment Details:</strong><br>{{ organization.bank_details|linebreaksbr }}</div>
+                {% endif %}
+                <div style="margin-bottom: 4px;">
+                  {% if invoice_object.notes %}
+                    {{ invoice_object.notes }}
+                  {% elif organization and organization.invoice_notes %}
+                    {{ organization.invoice_notes }}
+                  {% else %}
+                    Thank you for your business. Please ensure payment is completed by the due date.
+                  {% endif %}
+                </div>
+                {% if invoice_object.terms %}
+                <div style="margin-top: 6px; font-size: 8pt; color: #64748b;"><strong>Terms:</strong> {{ invoice_object.terms }}</div>
+                {% endif %}
               </td>
               <td rowspan="1" class=" lineitem-column lineitem-content-right"
-                style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 24px;">
-                <span id="item_amount">NPR {{ invoice_object.total }}</span>
+                style="text-align: right; padding-right: 10px; font-weight: 700; font-size: 22px; color: #0f172a;">
+                <span id="item_amount">{{ invoice_object.customer_name.currency }} {{ invoice_object.total }}</span>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <table>
+        <table style="width: 100%; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
           <tbody>
             <tr>
-              <td style="padding: 0;margin: 0;">
-                <p>
-                <span>Contact Details</span>
-                <span style="color: #262626; font-weight: 600;">P:</span><span style="color: #646464;">+977-9802340360</span>
-                </p>
+              {% if organization.phone %}
+              <td style="padding: 0; margin: 0; font-size: 8pt; color: #64748b;">
+                <strong style="color: #0f172a;">Tel:</strong> {{ organization.phone }}
               </td>
-              <td style="color: #646464; padding: 0; margin: 0;">
-                <p>44600, New Baneshwor
-                  Kathmandu, Nepal</p>
+              {% endif %}
+              {% if organization.email %}
+              <td style="padding: 0; margin: 0; font-size: 8pt; color: #64748b;">
+                <strong style="color: #0f172a;">Email:</strong> {{ organization.email }}
               </td>
-              <td>
-                <p><span style="color: #262626; font-weight: 600;">E:</span><span style="color: #646464;">kantipurinfotech@gmail.com</span>
-                  <span style="color: #262626; font-weight: 600;">W:</span><span style="color: #646464;">www.kantipurinfotech.com</span></p>
+              {% endif %}
+              {% if organization.website %}
+              <td style="padding: 0; margin: 0; font-size: 8pt; color: #64748b;">
+                <strong style="color: #0f172a;">Web:</strong> {{ organization.website }}
               </td>
-              <td>
-                <p style="color: #E5202B; font-size: 20px; font-weight: 200;">&nbsp;THANK YOU!</p>
+              {% endif %}
+              <td style="text-align: right; font-size: 11pt; font-weight: bold; color: #4f46e5;">
+                THANK YOU!
               </td>
             </tr>
           </tbody>
