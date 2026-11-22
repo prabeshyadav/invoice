@@ -33,7 +33,7 @@ DEBUG = env_bool('DEBUG', False)
 SECRET_KEY = resolve_secret_key(os.environ.get('SECRET_KEY', ''), DEBUG)
 
 # `backend` is the compose service name the Next.js proxy sends as Host.
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend')
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend,.railway.app')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 if not DEBUG:
@@ -130,7 +130,7 @@ else:
 
 # Shared cache so API throttle counters are shared across gunicorn workers.
 # CACHE_URL=redis://redis:6379/1 in production; per-process memory otherwise.
-CACHE_URL = os.environ.get('CACHE_URL', '')
+CACHE_URL = os.environ.get('CACHE_URL') or os.environ.get('REDIS_URL', '')
 CACHES = {
     'default': (
         {'BACKEND': 'django.core.cache.backends.redis.RedisCache', 'LOCATION': CACHE_URL}
@@ -254,7 +254,7 @@ SIMPLE_JWT = {
 # settings.py
 from celery.schedules import crontab
 
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL') or os.environ.get('REDIS_URL', 'redis://redis:6379/0')
 CELERY_TIMEZONE = TIME_ZONE
 
 # Unpaid invoices get one reminder email this many days before their due date.
