@@ -72,7 +72,10 @@ export default function CustomerForm({
   const set = (k: Key, v: string) =>
     setForm((f) => {
       const next = { ...f, [k]: v };
-      if (!displayTouched && (k === "first_name" || k === "last_name" || k === "company_name")) {
+      if (
+        !displayTouched &&
+        (k === "first_name" || k === "last_name" || k === "company_name" || k === "customer_type")
+      ) {
         next.customer_display_name =
           next.customer_type === "business" && next.company_name
             ? next.company_name
@@ -154,8 +157,8 @@ export default function CustomerForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {input("email", "Email", { type: "email", required: true, placeholder: "name@company.com" })}
           {input("website", "Website", { placeholder: "https://" })}
-          {input("phone", "Work phone", { type: "tel", required: true })}
-          {input("mobile", "Mobile", { type: "tel", required: true })}
+          {input("mobile", "Mobile", { type: "tel", required: true, placeholder: "e.g. +977 9800000000" })}
+          {input("phone", "Work phone (optional)", { type: "tel", required: false, placeholder: "e.g. 01-4400000" })}
         </div>
       </Card>
 

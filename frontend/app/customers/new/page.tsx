@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CustomerForm, { type CustomerPayload } from "@/components/CustomerForm";
 import { RequireAuth } from "@/lib/auth";
+import { useToast } from "@/lib/toast";
 import { apiErrorMessage, apiFetch } from "@/lib/api";
 import { ErrorBanner, PageHeader } from "@/components/ui";
 
@@ -17,6 +18,7 @@ export default function NewCustomerPage() {
 
 function NewCustomerBody() {
   const router = useRouter();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,6 +30,7 @@ function NewCustomerBody() {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      toast.success("Customer created successfully.");
       router.replace(`/customers/${created.id}`);
     } catch (e) {
       setError(apiErrorMessage(e));

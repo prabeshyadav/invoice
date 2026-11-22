@@ -13,6 +13,7 @@ import {
   type Invoice,
 } from "@/lib/api";
 import Icon from "@/components/Icon";
+import { MonthlyBarChart, PieChart } from "@/components/Charts";
 import {
   Card,
   EmptyState,
@@ -36,13 +37,6 @@ export default function Dashboard() {
   );
 }
 
-const BAR_COLORS: Record<string, string> = {
-  paid: "bg-emerald-500",
-  sent: "bg-blue-500",
-  draft: "bg-slate-300",
-  overdue: "bg-red-500",
-};
-
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
@@ -53,12 +47,20 @@ type DashboardInvoice = Pick<
   "id" | "customer_name" | "customer_display_name" | "invoice_number" | "invoice_date" | "due_date" | "subject" | "status" | "total"
 >;
 
+interface MonthlyTrendItem {
+  month: string;
+  year?: number;
+  billed: string;
+  collected: string;
+}
+
 /* GET /api/dashboard/: totals are computed server-side; money values are "12.50" strings. */
 interface DashboardData {
   invoice_count: number;
   customer_count: number;
   totals: { billed: string; collected: string; outstanding: string; overdue: string };
   by_status: Record<string, { count: number; amount: string }>;
+  monthly_trend?: MonthlyTrendItem[];
   recent: DashboardInvoice[];
   upcoming: DashboardInvoice[];
 }
@@ -69,6 +71,7 @@ function DashboardBody() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [chartMode, setChartMode] = useState<"pie" | "donut">("pie");
 
   useEffect(() => {
     apiFetch<DashboardData>("/dashboard/")
@@ -86,10 +89,28 @@ function DashboardBody() {
   const unpaidCount = invoiceCount - paidCount;
   const total = Number(data.totals.billed);
 
-  const breakdown = ["paid", "sent", "draft", "overdue"].map((s) => ({
-    status: s,
-    count: data.by_status[s]?.count ?? 0,
-    amount: Number(data.by_status[s]?.amount ?? 0),
+  const statusColors: Record<string, string> = {
+    paid: "#10b981",
+    sent: "#3b82f6",
+    partially_paid: "#f59e0b",
+    draft: "#94a3b8",
+    overdue: "#f43f5e",
+  };
+
+  const donutSegments = ["paid", "sent", "partially_paid", "draft", "overdue"]
+    .map((s) => ({
+      label: s === "partially_paid" ? "Partially paid" : s.charAt(0).toUpperCase() + s.slice(1),
+      value: Number(data.by_status[s]?.amount ?? 0),
+      count: data.by_status[s]?.count ?? 0,
+      color: statusColors[s] || "#94a3b8",
+    }))
+    .filter((s) => s.value > 0 || (s.count ?? 0) > 0);
+
+  const monthlyBarData = (data.monthly_trend ?? []).map((m) => ({
+    month: m.month,
+    year: m.year,
+    billed: Number(m.billed),
+    collected: Number(m.collected),
   }));
 
   const upcoming = data.upcoming;
@@ -160,35 +181,51 @@ function DashboardBody() {
         </Card>
       ) : (
         <>
-          <Card className="mt-6" title="Invoice status" description="Share of billed amount by status">
-            <div className="flex h-2.5 overflow-hidden rounded-full bg-line-soft">
-              {breakdown.map(
-                (b) =>
-                  b.amount > 0 && (
-                    <div
-                      key={b.status}
-                      className={BAR_COLORS[b.status]}
-                      style={{ width: `${(b.amount / (total || 1)) * 100}%` }}
-                      title={`${b.status}: ${formatMoney(b.amount)}`}
-                    />
-                  )
-              )}
-            </div>
-            <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {breakdown.map((b) => (
-                <div key={b.status}>
-                  <dt className="flex items-center gap-2 text-[13px] capitalize text-muted">
-                    <span className={`h-2 w-2 rounded-full ${BAR_COLORS[b.status]}`} />
-                    {b.status}
-                  </dt>
-                  <dd className="tabular mt-1 text-[15px] font-semibold text-ink">
-                    {formatMoney(b.amount)}
-                    <span className="ml-1.5 text-xs font-normal text-faint">({b.count})</span>
-                  </dd>
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card
+              title="Invoice Status Breakdown"
+              description="Interactive distribution by status (hover slices to inspect)"
+              actions={
+                <div className="flex items-center rounded-lg bg-line-soft p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("pie")}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      chartMode === "pie"
+                        ? "bg-white text-ink shadow-2xs"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    Pie
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("donut")}
+                    className={`rounded-md px-2.5 py-1 font-medium transition ${
+                      chartMode === "donut"
+                        ? "bg-white text-ink shadow-2xs"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    Donut
+                  </button>
                 </div>
-              ))}
-            </dl>
-          </Card>
+              }
+            >
+              <PieChart
+                segments={donutSegments}
+                donut={chartMode === "donut"}
+                size={190}
+              />
+            </Card>
+
+            <Card
+              title="Monthly Cash Flow"
+              description="Invoiced vs Collected over the last 6 months"
+            >
+              <MonthlyBarChart data={monthlyBarData} />
+            </Card>
+          </div>
 
           <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
             <Card
