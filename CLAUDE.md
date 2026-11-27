@@ -40,6 +40,7 @@ Frontend checks (run from `frontend/`): `npm ci`, then `./node_modules/.bin/esli
 
 ## Conventions
 
+- **Commits:** Claude may make changes, but never add a `Co-Authored-By: Claude` (or any AI-assistant co-author) trailer to a commit message. Commits are authored only by the repository owner, so Claude is not listed as a GitHub contributor.
 - **Frontend:** Next.js 16 with breaking changes. Read `frontend/AGENTS.md` and `node_modules/next/dist/docs/` before using a Next API you have not checked. Pages are client components wrapped in `<RequireAuth>`. Reuse the tokens and components in `components/ui.tsx` instead of hand-writing Tailwind colours. Theme colours live in `app/globals.css` under `@theme`.
 - **Icons:** Material Symbols, self-hosted at `public/fonts/`. Use `<Icon name="…" />`.
 - **API:** Django needs trailing slashes, and the proxy adds them. Lists are paginated (20 per page), so call `listAll()` to fetch every page. `GET /api/invoices/?customer=<id>` filters by customer.
